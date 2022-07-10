@@ -174,7 +174,7 @@ class SmartLoggerTest {
         assertContainsStringOnce(logResult, LOG_ENTITY_NAME);
         assertContainsStringOnce(logResult, LAZY_COL1_ENTITY1_NAME);
         assertContainsStringOnce(logResult, LAZY_COL1_ENTITY2_NAME);
-        assertContainsString(logResult, CIRCULAR_REFERENCE, 2);
+        assertContainsString(logResult, CIRCULAR_REFERENCE_STRING, 2);
         assertContainsIdOnce(logResult, savedLogEntity.getId());
         assertContainsIdOnce(logResult, child11.getId());
         assertContainsIdOnce(logResult, child12.getId());
@@ -212,13 +212,13 @@ class SmartLoggerTest {
         System.err.println(logResult);
 
 
-//        assertContainsStringOnce(logResult, LOG_ENTITY_NAME);
-//        assertContainsStringOnce(logResult, LAZY_COL1_ENTITY1_NAME);
-//        assertContainsStringOnce(logResult, LAZY_COL1_ENTITY2_NAME);
-//        assertContainsString(logResult, CIRCULAR_REFERENCE, 2);
-//        assertContainsIdOnce(logResult, savedLogEntity.getId());
-//        assertContainsIdOnce(logResult, child11.getId());
-//        assertContainsIdOnce(logResult, child12.getId());
+        assertContainsStringOnce(logResult, LOG_ENTITY_NAME);
+        assertContainsStringOnce(logResult, LOG_CHILD4_1_NAME);
+        assertContainsStringOnce(logResult, LOG_CHILD4_2_NAME);
+        assertContainsString(logResult, CIRCULAR_REFERENCE_LIST_STRING,2);
+        assertContainsIdOnce(logResult, savedLogEntity.getId());
+        assertContainsIdOnce(logResult, child11.getId());
+        assertContainsIdOnce(logResult, child12.getId());
     }
 
     @Transactional
