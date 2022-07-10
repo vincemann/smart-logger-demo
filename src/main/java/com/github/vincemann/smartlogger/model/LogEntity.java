@@ -46,6 +46,15 @@ public class LogEntity extends LogIdentifiableEntity {
     @JsonManagedReference
     private Set<LogChild2> lazyChildren2 = new HashSet<>();
 
+    @ManyToMany(fetch = FetchType.LAZY)
+    @JoinTable(
+            name = "LOG_ENTITY_SCHOOL",
+            joinColumns = {@JoinColumn(name = "LOG_ENTITY_ID", referencedColumnName = "ID")},
+            inverseJoinColumns = {@JoinColumn(name = "LOG_CHILD4_ID", referencedColumnName = "ID")})
+//    @NotNull
+    @BiDirChildCollection(LogChild4.class)
+    private Set<LogChild4> logChildren4 = new HashSet<>();
+
     @OneToMany(cascade = CascadeType.ALL, mappedBy = "logEntity",fetch = FetchType.EAGER)
     @BiDirChildCollection(LogChild3.class)
     @JsonManagedReference

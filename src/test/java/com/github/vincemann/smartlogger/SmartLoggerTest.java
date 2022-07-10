@@ -43,6 +43,8 @@ class SmartLoggerTest {
     static final String EAGER_CHILD_NAME = "eager child";
     static final String LAZY_COL2_ENTITY1_NAME = "lazy Col2 Entity1";
     static final String LAZY_COL2_ENTITY2_NAME = "lazy Col2 Entity2";
+    static final String LOG_CHILD4_1_NAME = "first log child 4";
+    static final String LOG_CHILD4_2_NAME = "second log child 4";
 
 
     @Autowired
@@ -66,12 +68,17 @@ class SmartLoggerTest {
     @Autowired
     EagerSingleLogChildService eagerSingleLogChildService;
 
+    @Autowired
+    LogChild4Service logChild4Service;
 
     LogEntity logEntity;
     LogChild lazyCol1_child1;
     LogChild lazyCol1_child2;
     LogChild2 lazyCol2_child1;
     LogChild2 lazyCol2_child2;
+
+    LogChild4 logChild4_1;
+    LogChild4 logChild4_2;
 
     LogChild3 eager_child1;
     LogChild3 eager_child2;
@@ -116,6 +123,14 @@ class SmartLoggerTest {
                 .build();
         lazyCol2_child2 = LogChild2.builder()
                 .name(LAZY_COL2_ENTITY2_NAME)
+                .build();
+
+        logChild4_1 = LogChild4.builder()
+                .name(LOG_CHILD4_1_NAME)
+                .build();
+
+        logChild4_2 = LogChild4.builder()
+                .name(LOG_CHILD4_2_NAME)
                 .build();
 
         lazySingleChild = new LazySingleLogChild(LAZY_CHILD_NAME);
@@ -167,6 +182,47 @@ class SmartLoggerTest {
 
     @Transactional
     @Test
+    void prohibitsBackrefManyToManyEndlessLoop() throws BadEntityException {
+
+        DemoConfig.USE_LAZY_LOGGER = Boolean.TRUE;
+
+
+//        lazyLogger = LazyLogger.builder()
+//                .ignoreLazyException(Boolean.TRUE)
+//                .ignoreEntities(Boolean.FALSE)
+//                .onlyLogLoaded(Boolean.FALSE)
+//                .build();
+
+
+        LogEntity savedLogEntity = logEntityService.save(logEntity);
+
+        LogChild4 child11 = logChild4Service.save(logChild4_1);
+        child11.getLogEntities().add(savedLogEntity);
+
+        LogChild4 child12 = logChild4Service.save(logChild4_2);
+        child12.getLogEntities().add(savedLogEntity);
+
+        savedLogEntity.getLogChildren4().add(child11);
+        savedLogEntity.getLogChildren4().add(child12);
+
+        TestTransaction.flagForCommit();
+        TestTransaction.end();
+
+        String logResult = savedLogEntity.toString();
+        System.err.println(logResult);
+
+
+//        assertContainsStringOnce(logResult, LOG_ENTITY_NAME);
+//        assertContainsStringOnce(logResult, LAZY_COL1_ENTITY1_NAME);
+//        assertContainsStringOnce(logResult, LAZY_COL1_ENTITY2_NAME);
+//        assertContainsString(logResult, CIRCULAR_REFERENCE, 2);
+//        assertContainsIdOnce(logResult, savedLogEntity.getId());
+//        assertContainsIdOnce(logResult, child11.getId());
+//        assertContainsIdOnce(logResult, child12.getId());
+    }
+
+    @Transactional
+    @Test
     void canIgnoreLazyInitException() throws BadEntityException {
         smartLogger = SmartLogger.builder()
                 .ignoreLazyException(Boolean.TRUE)
@@ -195,7 +251,7 @@ class SmartLoggerTest {
 
         System.err.println(s);
 
-        assertContainsString(s, SmartLogger.LAZY_INIT_EXCEPTION_LIST_STRING, 2);
+        assertContainsString(s, SmartLogger.LAZY_INIT_EXCEPTION_LIST_STRING, 3);
         Assertions.assertFalse(s.contains(LAZY_COL1_ENTITY1_NAME));
 
         assertContainsStringOnce(s, EAGER_CHILD_NAME);
@@ -396,7 +452,8 @@ class SmartLoggerTest {
         assertContainsStringOnce(logResult, LAZY_COL1_ENTITY2_NAME);
         assertContainsStringOnce(logResult, EAGER_CHILD_NAME);
         assertContainsStringOnce(logResult, LOG_ENTITY_NAME);
-        assertContainsStringOnce(logResult, IGNORED_UNLOADED_STRING);
+        assertContainsString(logResult, IGNORED_UNLOADED_STRING,2);
+
 
         Assertions.assertFalse(logResult.contains(LAZY_COL2_ENTITY1_NAME));
         Assertions.assertFalse(logResult.contains(LAZY_COL2_ENTITY2_NAME));
@@ -466,7 +523,7 @@ class SmartLoggerTest {
         assertContainsStringOnce(logResult, LAZY_COL1_ENTITY2_NAME);
         assertContainsStringOnce(logResult, EAGER_CHILD_NAME);
         assertContainsStringOnce(logResult, LOG_ENTITY_NAME);
-        assertContainsStringOnce(logResult, IGNORED_UNLOADED_STRING);
+        assertContainsString(logResult, IGNORED_UNLOADED_STRING,2);
 
         Assertions.assertFalse(logResult.contains(LAZY_COL2_ENTITY1_NAME));
         Assertions.assertFalse(logResult.contains(LAZY_COL2_ENTITY2_NAME));
@@ -894,6 +951,7 @@ class SmartLoggerTest {
         TransactionalRapidTestUtil.clear(logChildService);
         TransactionalRapidTestUtil.clear(logChild2Service);
         TransactionalRapidTestUtil.clear(logChild3Service);
+        TransactionalRapidTestUtil.clear(logChild4Service);
         TransactionalRapidTestUtil.clear(logParentService);
         TransactionalRapidTestUtil.clear(lazySingleLogChildService);
         TransactionalRapidTestUtil.clear(eagerSingleLogChildService);
