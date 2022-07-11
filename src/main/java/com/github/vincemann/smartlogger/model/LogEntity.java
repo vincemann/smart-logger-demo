@@ -4,6 +4,7 @@ package com.github.vincemann.smartlogger.model;
 import com.fasterxml.jackson.annotation.JsonManagedReference;
 import com.github.vincemann.springrapid.autobidir.model.child.annotation.BiDirChildCollection;
 import com.github.vincemann.springrapid.autobidir.model.child.annotation.BiDirChildEntity;
+import com.github.vincemann.springrapid.autobidir.model.child.annotation.UniDirChildEntity;
 import com.github.vincemann.springrapid.autobidir.model.parent.annotation.BiDirParentEntity;
 import com.github.vincemann.smartlogger.SmartLogger;
 import lombok.*;

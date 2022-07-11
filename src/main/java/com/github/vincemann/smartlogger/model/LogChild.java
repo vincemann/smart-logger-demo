@@ -1,14 +1,16 @@
 package com.github.vincemann.smartlogger.model;
 
 import com.fasterxml.jackson.annotation.JsonBackReference;
+import com.github.vincemann.springrapid.autobidir.model.child.annotation.UniDirChildCollection;
+import com.github.vincemann.springrapid.autobidir.model.child.annotation.UniDirChildEntity;
 import com.github.vincemann.springrapid.autobidir.model.parent.annotation.BiDirParentEntity;
 import com.github.vincemann.smartlogger.SmartLogger;
 import lombok.*;
 
-import javax.persistence.Entity;
-import javax.persistence.JoinColumn;
-import javax.persistence.ManyToOne;
-import javax.persistence.Table;
+import javax.persistence.*;
+
+import java.util.HashSet;
+import java.util.Set;
 
 import static com.github.vincemann.smartlogger.config.DemoConfig.USE_LAZY_LOGGER;
 
@@ -25,6 +27,11 @@ public class LogChild extends LogIdentifiableEntity {
     @JsonBackReference
     @BiDirParentEntity
     private LogEntity logEntity;
+
+    @OneToMany(cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    @JoinColumn(name = "log_child2_id")
+    @UniDirChildCollection(LogChild2.class)
+    private Set<LogChild2> logChild2Members = new HashSet<>();
 
 
     public LogChild(String name) {
