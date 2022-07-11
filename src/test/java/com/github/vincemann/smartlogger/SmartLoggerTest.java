@@ -45,6 +45,8 @@ class SmartLoggerTest {
     static final String LAZY_COL2_ENTITY2_NAME = "lazy Col2 Entity2";
     static final String LOG_CHILD4_1_NAME = "first log child 4";
     static final String LOG_CHILD4_2_NAME = "second log child 4";
+    private static final String LOG_CHILD4_3_NAME = "third log child 4";
+    private static final String LOG_ENTITY2_NAME = "second log-entity";
 
 
     @Autowired
@@ -72,6 +74,9 @@ class SmartLoggerTest {
     LogChild4Service logChild4Service;
 
     LogEntity logEntity;
+    LogEntity logEntity2;
+
+
     LogChild lazyCol1_child1;
     LogChild lazyCol1_child2;
     LogChild2 lazyCol2_child1;
@@ -79,6 +84,7 @@ class SmartLoggerTest {
 
     LogChild4 logChild4_1;
     LogChild4 logChild4_2;
+    LogChild4 logChild4_3;
 
     LogChild3 eager_child1;
     LogChild3 eager_child2;
@@ -98,6 +104,11 @@ class SmartLoggerTest {
         logEntity = LogEntity.builder()
                 .name(LOG_ENTITY_NAME)
                 .build();
+
+        logEntity2 = LogEntity.builder()
+                .name(LOG_ENTITY2_NAME)
+                .build();
+
 
         lazyParent = LogParent.builder()
                 .name(LAZY_PARENT_NAME)
@@ -131,6 +142,9 @@ class SmartLoggerTest {
 
         logChild4_2 = LogChild4.builder()
                 .name(LOG_CHILD4_2_NAME)
+                .build();
+        logChild4_3 = LogChild4.builder()
+                .name(LOG_CHILD4_3_NAME)
                 .build();
 
         lazySingleChild = new LazySingleLogChild(LAZY_CHILD_NAME);
@@ -215,10 +229,61 @@ class SmartLoggerTest {
         assertContainsStringOnce(logResult, LOG_ENTITY_NAME);
         assertContainsStringOnce(logResult, LOG_CHILD4_1_NAME);
         assertContainsStringOnce(logResult, LOG_CHILD4_2_NAME);
-        assertContainsString(logResult, CIRCULAR_REFERENCE_LIST_STRING,2);
+        assertContainsString(logResult, CIRCULAR_REFERENCE_STRING,2);
         assertContainsIdOnce(logResult, savedLogEntity.getId());
         assertContainsIdOnce(logResult, child11.getId());
         assertContainsIdOnce(logResult, child12.getId());
+    }
+
+    @Transactional
+    @Test
+    void prohibitsBackrefManyToManyEndlessLoop_someHaveBackRefInSetAndNonBackref() throws BadEntityException {
+
+        DemoConfig.USE_LAZY_LOGGER = Boolean.TRUE;
+
+
+//        lazyLogger = LazyLogger.builder()
+//                .ignoreLazyException(Boolean.TRUE)
+//                .ignoreEntities(Boolean.FALSE)
+//                .onlyLogLoaded(Boolean.FALSE)
+//                .build();
+
+
+        LogEntity savedLogEntity = logEntityService.save(logEntity);
+        LogEntity soloLogEntity = logEntityService.save(logEntity2);
+
+        LogChild4 child11 = logChild4Service.save(logChild4_1);
+        child11.getLogEntities().add(savedLogEntity);
+
+        LogChild4 child12 = logChild4Service.save(logChild4_2);
+        child12.getLogEntities().add(savedLogEntity);
+
+        LogChild4 child13 = logChild4Service.save(logChild4_3);
+        child13.getLogEntities().add(savedLogEntity);
+        child13.getLogEntities().add(soloLogEntity);
+
+        savedLogEntity.getLogChildren4().add(child11);
+        savedLogEntity.getLogChildren4().add(child12);
+        savedLogEntity.getLogChildren4().add(child13);
+
+        TestTransaction.flagForCommit();
+        TestTransaction.end();
+
+        String logResult = savedLogEntity.toString();
+        System.err.println(logResult);
+
+
+        assertContainsStringOnce(logResult, LOG_ENTITY_NAME);
+        assertContainsStringOnce(logResult, LOG_ENTITY2_NAME);
+        assertContainsStringOnce(logResult, LOG_CHILD4_1_NAME);
+        assertContainsStringOnce(logResult, LOG_CHILD4_2_NAME);
+        assertContainsStringOnce(logResult, LOG_CHILD4_3_NAME);
+        assertContainsString(logResult, CIRCULAR_REFERENCE_STRING,3);
+//        assertContainsIdOnce(logResult, savedLogEntity.getId());
+//        assertContainsIdOnce(logResult, soloLogEntity.getId());
+//        assertContainsIdOnce(logResult, child11.getId());
+//        assertContainsIdOnce(logResult, child12.getId());
+//        assertContainsIdOnce(logResult, child13.getId());
     }
 
     @Transactional

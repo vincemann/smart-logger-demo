@@ -19,12 +19,12 @@ import static com.github.vincemann.smartlogger.config.DemoConfig.USE_LAZY_LOGGER
 @Table(name = "log_children")
 public class LogChild extends LogIdentifiableEntity {
 
+    private String name;
     @ManyToOne
     @JoinColumn(name = "log_entity_id")
     @JsonBackReference
     @BiDirParentEntity
     private LogEntity logEntity;
-    private String name;
 
 
     public LogChild(String name) {
