@@ -32,6 +32,8 @@ public class LogChild3 extends LogIdentifiableEntity {
         this.name = name;
     }
 
+
+
     @Builder
     public LogChild3(Long id, String name, LogEntity logEntity) {
         setId(id);
@@ -41,7 +43,7 @@ public class LogChild3 extends LogIdentifiableEntity {
 
     @Override
     public String toString() {
-        return "LogChild{" +
+        return "LogChild3{" +
                 "name='" + name + '\'' +
                 '}';
     }

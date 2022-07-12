@@ -81,9 +81,7 @@ public class LogEntity extends LogIdentifiableEntity {
     public String toString() {
         if (USE_LAZY_LOGGER){
             SmartLogger logger =  SmartLogger.builder()
-                    .ignoreLazyException(Boolean.TRUE)
-                    .ignoreEntities(Boolean.FALSE)
-                    .onlyLogLoaded(Boolean.FALSE)
+                    .logShortOnAlreadySeen(true)
                     .build();
 
             return logger.toString(this);

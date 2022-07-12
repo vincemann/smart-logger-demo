@@ -33,15 +33,17 @@ import static com.github.vincemann.smartlogger.SmartLogger.*;
 class SmartLoggerTest {
 
 
-    static final String LOG_ENTITY_NAME = "log entity";
+    static final String LOG_ENTITY_NAME = "log.entity";
     static final String LAZY_COL1_ENTITY1_NAME = "lazy Col1 Entity1";
     static final String LAZY_COL1_ENTITY2_NAME = "lazy Col1 Entity2";
-    static final String EAGER_ENTITY1_NAME = "eager col Entity1";
-    static final String EAGER_ENTITY2_NAME = "eager col Entity2";
+    static final String COL3_ENTITY1_NAME = "first log entity3";
+    static final String COL3_ENTITY2_NAME = "second log entity3";
     static final String LAZY_PARENT_NAME = "lazy parent";
     static final String LAZY_CHILD_NAME = "lazy child";
     static final String EAGER_CHILD_NAME = "eager child";
     static final String LAZY_COL2_ENTITY1_NAME = "lazy Col2 Entity1";
+    static final String COL2_ENTITY1_SIDE_PROPERTY = "SIDE-PROPERTY";
+    static final String COL2_ENTITY1_SECOND_MAIN_PROPERTY = "second main property";
     static final String LAZY_COL2_ENTITY2_NAME = "lazy Col2 Entity2";
     static final String LOG_CHILD4_1_NAME = "first log child 4";
     static final String LOG_CHILD4_2_NAME = "second log child 4";
@@ -86,8 +88,8 @@ class SmartLoggerTest {
     LogChild4 logChild4_2;
     LogChild4 logChild4_3;
 
-    LogChild3 eager_child1;
-    LogChild3 eager_child2;
+    LogChild3 logChild3_1;
+    LogChild3 logChild3_2;
     LogParent lazyParent;
     LazySingleLogChild lazySingleChild;
     EagerSingleLogChild eagerSingleChild;
@@ -121,16 +123,18 @@ class SmartLoggerTest {
                 .name(LAZY_COL1_ENTITY2_NAME)
                 .build();
 
-        eager_child1 = LogChild3.builder()
-                .name(EAGER_ENTITY1_NAME)
+        logChild3_1 = LogChild3.builder()
+                .name(COL3_ENTITY1_NAME)
                 .build();
 
-        eager_child2 = LogChild3.builder()
-                .name(EAGER_ENTITY2_NAME)
+        logChild3_2 = LogChild3.builder()
+                .name(COL3_ENTITY2_NAME)
                 .build();
 
         lazyCol2_child1 = LogChild2.builder()
                 .name(LAZY_COL2_ENTITY1_NAME)
+                .sideProperty(COL2_ENTITY1_SIDE_PROPERTY)
+                .secondMainProperty(COL2_ENTITY1_SECOND_MAIN_PROPERTY)
                 .build();
         lazyCol2_child2 = LogChild2.builder()
                 .name(LAZY_COL2_ENTITY2_NAME)
@@ -192,6 +196,55 @@ class SmartLoggerTest {
         // assertContainsIdOnce(logResult, savedLogEntity.getId());
         // assertContainsIdOnce(logResult, child11.getId());
         // assertContainsIdOnce(logResult, child12.getId());
+    }
+
+    @Transactional
+    @Test
+    void canLogTwoSameEntities_secondShouldGetLoggedInShortForm() throws BadEntityException {
+
+        DemoConfig.USE_LAZY_LOGGER = Boolean.TRUE;
+
+
+
+        LogEntity savedLogEntity = logEntityService.save(logEntity);
+
+        // this will be logged twice
+        LogChild2 logChild2 = logChild2Service.save(lazyCol2_child1);
+        logChild2.setLogEntity(savedLogEntity);
+
+        LogChild child11 = logChildService.save(lazyCol1_child1);
+        child11.setLogEntity(savedLogEntity);
+        child11.getLogChild2Members().add(logChild2);
+
+        LogChild child12 = logChildService.save(lazyCol1_child2);
+        child12.setLogEntity(savedLogEntity);
+
+        savedLogEntity.getLazyChildren1().add(child11);
+        savedLogEntity.getLazyChildren1().add(child12);
+
+        savedLogEntity.getLazyChildren2().add(logChild2);
+
+        TestTransaction.flagForCommit();
+        TestTransaction.end();
+
+        String logResult = savedLogEntity.toString();
+        System.err.println(logResult);
+//        String s = savedLogEntity.toString();
+
+
+        assertContainsStringOnce(logResult, LOG_ENTITY_NAME);
+        assertContainsStringOnce(logResult, LAZY_COL1_ENTITY1_NAME);
+        assertContainsStringOnce(logResult, LAZY_COL1_ENTITY2_NAME);
+        // important main fields logged twice
+        assertContainsString(logResult, LAZY_COL2_ENTITY1_NAME,2);
+        assertContainsString(logResult,COL2_ENTITY1_SECOND_MAIN_PROPERTY,2);
+        // unimportant skipped when entity is logged > 1 times
+        assertContainsString(logResult,COL2_ENTITY1_SIDE_PROPERTY,1);
+
+        assertContainsString(logResult, CIRCULAR_REFERENCE_STRING, 4);
+//        // assertContainsIdOnce(logResult, savedLogEntity.getId());
+//        // assertContainsIdOnce(logResult, child11.getId());
+//        // assertContainsIdOnce(logResult, child12.getId());
     }
 
     @Transactional
@@ -821,9 +874,9 @@ class SmartLoggerTest {
         logEntity.getLazyChildren2().add(child21);
         logEntity.getLazyChildren2().add(child22);
 
-        LogChild3 child31 = logChild3Service.save(eager_child1);
+        LogChild3 child31 = logChild3Service.save(logChild3_1);
         child31.setLogEntity(logEntity);
-        LogChild3 child32 = logChild3Service.save(eager_child2);
+        LogChild3 child32 = logChild3Service.save(logChild3_2);
         child32.setLogEntity(logEntity);
 
 
@@ -851,8 +904,8 @@ class SmartLoggerTest {
         System.err.println(logResult);
 
 
-        assertContainsStringOnce(logResult, EAGER_ENTITY1_NAME);
-        assertContainsStringOnce(logResult, EAGER_ENTITY2_NAME);
+        assertContainsStringOnce(logResult, COL3_ENTITY1_NAME);
+        assertContainsStringOnce(logResult, COL3_ENTITY2_NAME);
         assertContainsStringOnce(logResult, EAGER_CHILD_NAME);
         assertContainsStringOnce(logResult, LOG_ENTITY_NAME);
         assertContainsString(logResult, TOO_MANY_ENTRIES_STRING, 2);
@@ -987,9 +1040,9 @@ class SmartLoggerTest {
 //        List<LogChild> resultList = entityManager.createQuery("SELECT NEW com.github.vincemann.logutil.model.LogChild(g.id, g.name,g.logEntity) FROM LogChild g").getResultList();
 //        logEntity.setLazyChildren1(Sets.newHashSet(resultList));
 
-        LogChild3 child31 = logChild3Service.save(eager_child1);
+        LogChild3 child31 = logChild3Service.save(logChild3_1);
         child31.setLogEntity(logEntity);
-        LogChild3 child32 = logChild3Service.save(eager_child2);
+        LogChild3 child32 = logChild3Service.save(logChild3_2);
         child32.setLogEntity(logEntity);
 
 
@@ -1024,8 +1077,8 @@ class SmartLoggerTest {
         String refined = s
                 .replace(LAZY_CHILD_NAME, "")
                 .replace(EAGER_CHILD_NAME, "")
-                .replace(EAGER_ENTITY1_NAME, "")
-                .replace(EAGER_ENTITY2_NAME, "")
+                .replace(COL3_ENTITY1_NAME, "")
+                .replace(COL3_ENTITY2_NAME, "")
                 .replace(LAZY_CHILD_NAME, "")
                 .replace(LAZY_COL1_ENTITY1_NAME, "")
                 .replace(LAZY_COL1_ENTITY2_NAME, "")
