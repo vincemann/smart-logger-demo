@@ -43,7 +43,9 @@ class SmartLoggerTest {
     static final String EAGER_CHILD_NAME = "eager child";
     static final String LAZY_COL2_ENTITY1_NAME = "lazy Col2 Entity1";
     static final String COL2_ENTITY1_SIDE_PROPERTY = "SIDE-PROPERTY";
+    static final String COL2_ENTITY1_SIDE_PROPERTY_KEY = "sideProperty";
     static final String COL2_ENTITY1_SECOND_MAIN_PROPERTY = "second main property";
+    static final String COL2_ENTITY1_SECOND_MAIN_PROPERTY_KEY = "secondMainProperty";
     static final String LAZY_COL2_ENTITY2_NAME = "lazy Col2 Entity2";
     static final String LOG_CHILD4_1_NAME = "first log child 4";
     static final String LOG_CHILD4_2_NAME = "second log child 4";
@@ -200,9 +202,13 @@ class SmartLoggerTest {
 
     @Transactional
     @Test
-    void canLogTwoSameEntities_secondShouldGetLoggedInShortForm() throws BadEntityException {
+    void alreadySeenEntityCanBeLoggedInShortForm() throws BadEntityException {
 
-        DemoConfig.USE_LAZY_LOGGER = Boolean.TRUE;
+//        DemoConfig.USE_LAZY_LOGGER = Boolean.TRUE;
+
+        SmartLogger logger =  SmartLogger.builder()
+                .logShortOnAlreadySeen(true)
+                .build();
 
 
 
@@ -227,7 +233,7 @@ class SmartLoggerTest {
         TestTransaction.flagForCommit();
         TestTransaction.end();
 
-        String logResult = savedLogEntity.toString();
+        String logResult = logger.toString(savedLogEntity);
         System.err.println(logResult);
 //        String s = savedLogEntity.toString();
 
@@ -238,10 +244,11 @@ class SmartLoggerTest {
         // important main fields logged twice
         assertContainsString(logResult, LAZY_COL2_ENTITY1_NAME,2);
         assertContainsString(logResult,COL2_ENTITY1_SECOND_MAIN_PROPERTY,2);
+        assertContainsString(logResult,COL2_ENTITY1_SECOND_MAIN_PROPERTY_KEY,2);
         // unimportant skipped when entity is logged > 1 times
         assertContainsString(logResult,COL2_ENTITY1_SIDE_PROPERTY,1);
-
-        assertContainsString(logResult, CIRCULAR_REFERENCE_STRING, 4);
+        assertContainsString(logResult,COL2_ENTITY1_SIDE_PROPERTY_KEY,1);
+        assertContainsString(logResult, CIRCULAR_REFERENCE_STRING, 3);
 //        // assertContainsIdOnce(logResult, savedLogEntity.getId());
 //        // assertContainsIdOnce(logResult, child11.getId());
 //        // assertContainsIdOnce(logResult, child12.getId());
@@ -251,9 +258,10 @@ class SmartLoggerTest {
     @Test
     void canLogTwoSameEntities_withoutBeingDetectedAsCircularRef() throws BadEntityException {
 
-        DemoConfig.USE_LAZY_LOGGER = Boolean.TRUE;
+//        DemoConfig.USE_LAZY_LOGGER = Boolean.TRUE;
 
-
+        SmartLogger logger =  SmartLogger.builder()
+                .build();
 
         LogEntity savedLogEntity = logEntityService.save(logEntity);
 
@@ -275,7 +283,7 @@ class SmartLoggerTest {
         TestTransaction.flagForCommit();
         TestTransaction.end();
 
-        String logResult = savedLogEntity.toString();
+        String logResult = logger.toString(savedLogEntity);
         System.err.println(logResult);
 //        String s = savedLogEntity.toString();
 
@@ -284,6 +292,11 @@ class SmartLoggerTest {
         assertContainsStringOnce(logResult, LAZY_COL1_ENTITY1_NAME);
         assertContainsStringOnce(logResult, LAZY_COL1_ENTITY2_NAME);
         assertContainsString(logResult, LAZY_COL2_ENTITY1_NAME,2);
+        assertContainsString(logResult,COL2_ENTITY1_SECOND_MAIN_PROPERTY,2);
+        assertContainsString(logResult,COL2_ENTITY1_SECOND_MAIN_PROPERTY_KEY,2);
+
+        assertContainsString(logResult,COL2_ENTITY1_SIDE_PROPERTY,2);
+        assertContainsString(logResult,COL2_ENTITY1_SIDE_PROPERTY_KEY,2);
         assertContainsString(logResult, CIRCULAR_REFERENCE_STRING, 4);
 //        // assertContainsIdOnce(logResult, savedLogEntity.getId());
 //        // assertContainsIdOnce(logResult, child11.getId());
@@ -497,7 +510,7 @@ class SmartLoggerTest {
                 .ignoreLazyException(Boolean.TRUE)
                 .ignoreEntities(Boolean.FALSE)
                 .onlyLogLoaded(Boolean.FALSE)
-                .propertyBlackList(Sets.newHashSet("eagerChild", "lazyChildren1"))
+                .visiblyIgnoredProperties(Sets.newHashSet("eagerChild", "lazyChildren1"))
                 .build();
         // LazyLogger.setEntityManager(entityManager);
 
@@ -840,7 +853,7 @@ class SmartLoggerTest {
                 .ignoreLazyException(Boolean.TRUE)
                 .ignoreEntities(Boolean.FALSE)
                 .onlyLogLoaded(Boolean.FALSE)
-                .maxEntitiesLoggedPropertyMap(maxEntityLimitations)
+                .maxEntitiesLoggedMap(maxEntityLimitations)
                 .build();
         // LazyLogger.setEntityManager(entityManager);
 
@@ -1003,7 +1016,7 @@ class SmartLoggerTest {
                 .ignoreEntities(Boolean.FALSE)
                 .idOnly(Boolean.TRUE)
                 .onlyLogLoaded(Boolean.FALSE)
-                .maxEntitiesLoggedPropertyMap(maxEntityLimitations)
+                .maxEntitiesLoggedMap(maxEntityLimitations)
                 .build();
         // LazyLogger.setEntityManager(entityManager);
 
