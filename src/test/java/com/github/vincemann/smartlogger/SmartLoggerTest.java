@@ -44,6 +44,7 @@ class SmartLoggerTest {
     static final String LAZY_COL2_ENTITY1_NAME = "lazy Col2 Entity1";
     static final String COL2_ENTITY1_SIDE_PROPERTY = "SIDE-PROPERTY";
     static final String COL2_ENTITY1_SIDE_PROPERTY_KEY = "sideProperty";
+    static final String LOG_ENTITY_LAZY_CHILDREN1_KEY = "lazyChildren1";
     static final String COL2_ENTITY1_SECOND_MAIN_PROPERTY = "second main property";
     static final String COL2_ENTITY1_SECOND_MAIN_PROPERTY_KEY = "secondMainProperty";
     static final String LAZY_COL2_ENTITY2_NAME = "lazy Col2 Entity2";
@@ -155,6 +156,57 @@ class SmartLoggerTest {
 
         lazySingleChild = new LazySingleLogChild(LAZY_CHILD_NAME);
         eagerSingleChild = new EagerSingleLogChild(EAGER_CHILD_NAME);
+    }
+
+
+    @Transactional
+    @Test
+    void shortLogEntity() throws BadEntityException {
+
+        smartLogger = SmartLogger.builder()
+                .logShortForm(true)
+                .build();
+
+
+
+        LogEntity savedLogEntity = logEntityService.save(logEntity);
+
+        LogChild child11 = logChildService.save(lazyCol1_child1);
+        child11.setLogEntity(savedLogEntity);
+
+        LogChild child12 = logChildService.save(lazyCol1_child2);
+        child12.setLogEntity(savedLogEntity);
+
+        savedLogEntity.getLazyChildren1().add(child11);
+        savedLogEntity.getLazyChildren1().add(child12);
+
+        // should also only log short form of logChild2 -> propagation
+        LogChild2 logChild2 = logChild2Service.save(lazyCol2_child1);
+        logChild2.setLogEntity(savedLogEntity);
+
+        savedLogEntity.getLazyChildren2().add(logChild2);
+
+
+        TestTransaction.flagForCommit();
+        TestTransaction.end();
+
+        String logResult = smartLogger.toString(savedLogEntity);
+        System.err.println(logResult);
+
+        assertContainsStringOnce(logResult, LOG_ENTITY_NAME);
+        assertContainsStringOnce(logResult, LAZY_COL2_ENTITY1_NAME);
+        assertContainsStringOnce(logResult,COL2_ENTITY1_SECOND_MAIN_PROPERTY);
+        assertContainsStringOnce(logResult,COL2_ENTITY1_SECOND_MAIN_PROPERTY_KEY);
+
+
+        Assertions.assertFalse(logResult.contains(CIRCULAR_REFERENCE_STRING));
+        // other fields ignored, not even key to see
+        Assertions.assertFalse(logResult.contains(LOG_ENTITY_LAZY_CHILDREN1_KEY));
+        Assertions.assertFalse(logResult.contains(LAZY_COL1_ENTITY1_NAME));
+        Assertions.assertFalse(logResult.contains(LAZY_COL1_ENTITY2_NAME));
+        Assertions.assertFalse(logResult.contains(COL2_ENTITY1_SIDE_PROPERTY_KEY));
+        Assertions.assertFalse(logResult.contains(COL2_ENTITY1_SIDE_PROPERTY));
+
     }
 
 

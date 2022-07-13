@@ -2,6 +2,7 @@ package com.github.vincemann.smartlogger.model;
 
 
 import com.fasterxml.jackson.annotation.JsonManagedReference;
+import com.github.vincemann.smartlogger.MainStringProperty;
 import com.github.vincemann.springrapid.autobidir.model.child.annotation.BiDirChildCollection;
 import com.github.vincemann.springrapid.autobidir.model.child.annotation.BiDirChildEntity;
 import com.github.vincemann.springrapid.autobidir.model.child.annotation.UniDirChildEntity;
@@ -23,6 +24,7 @@ import static com.github.vincemann.smartlogger.config.DemoConfig.USE_LAZY_LOGGER
 @Table(name = "log_entity")
 public class LogEntity extends LogIdentifiableEntity {
 
+    @MainStringProperty
     private String name;
 
     @Builder
@@ -37,11 +39,13 @@ public class LogEntity extends LogIdentifiableEntity {
         this.lazyParent = lazyParent;
     }
 
+
     @OneToMany(cascade = CascadeType.ALL, mappedBy = "logEntity",fetch = FetchType.LAZY)
     @BiDirChildCollection(LogChild.class)
     @JsonManagedReference
     private Set<LogChild> lazyChildren1 = new HashSet<>();
 
+    @MainStringProperty
     @OneToMany(cascade = CascadeType.ALL, mappedBy = "logEntity",fetch = FetchType.LAZY)
     @BiDirChildCollection(LogChild2.class)
     @JsonManagedReference
