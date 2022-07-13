@@ -50,9 +50,7 @@ public class LogChild extends LogIdentifiableEntity {
     public String toString() {
         if (USE_LAZY_LOGGER){
             SmartLogger logger = SmartLogger.builder()
-                    .ignoreLazyException(Boolean.TRUE)
-                    .ignoreEntities(Boolean.FALSE)
-                    .onlyLogLoaded(Boolean.FALSE)
+                    .logShortForm(true)
                     .build();
 
             return logger.toString(this);

@@ -1,7 +1,9 @@
 package com.github.vincemann.smartlogger.model;
 
 import com.fasterxml.jackson.annotation.JsonBackReference;
-import com.github.vincemann.smartlogger.MainStringProperty;
+import com.github.vincemann.smartlogger.MainToStringProperty;
+import com.github.vincemann.smartlogger.SmartLogger;
+import com.github.vincemann.smartlogger.SmartToString;
 import com.github.vincemann.springrapid.autobidir.model.parent.annotation.BiDirParentEntity;
 import lombok.Builder;
 import lombok.Getter;
@@ -13,25 +15,29 @@ import javax.persistence.JoinColumn;
 import javax.persistence.ManyToOne;
 import javax.persistence.Table;
 
+import static com.github.vincemann.smartlogger.config.DemoConfig.USE_LAZY_LOGGER;
+
 @Setter
 @Getter
 @NoArgsConstructor
 @Entity
 @Table(name = "log_children2")
+@SmartToString
 public class LogChild2 extends LogIdentifiableEntity {
 
+    @MainToStringProperty
     @ManyToOne
     @JoinColumn(name = "log_entity_id")
     @JsonBackReference
     @BiDirParentEntity
     private LogEntity logEntity;
 
-    @MainStringProperty
+    @MainToStringProperty
     private String name;
 
     private String sideProperty;
 
-    @MainStringProperty
+    @MainToStringProperty
     private String secondMainProperty;
 
 
@@ -51,8 +57,16 @@ public class LogChild2 extends LogIdentifiableEntity {
 
     @Override
     public String toString() {
-        return "LogChild2{" +
-                "name='" + name + '\'' +
-                '}';
+        if (USE_LAZY_LOGGER){
+            SmartLogger logger = SmartLogger.builder()
+                    .logShortForm(true)
+                    .build();
+
+            return logger.toString(this);
+        }else {
+            return "LogChild2{" +
+                    "name='" + name + '\'' +
+                    '}';
+        }
     }
 }

@@ -11,10 +11,7 @@ import com.github.vincemann.springrapid.coretest.util.TransactionalRapidTestUtil
 import com.google.common.collect.Sets;
 import org.apache.commons.lang3.StringUtils;
 import org.hibernate.LazyInitializationException;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.Assertions;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ActiveProfiles;
@@ -158,6 +155,56 @@ class SmartLoggerTest {
         eagerSingleChild = new EagerSingleLogChild(EAGER_CHILD_NAME);
     }
 
+    @Disabled
+    @Transactional
+    @Test
+    void smartLoggerCallsSmartLoggerOfDiffClass_ifIndicated() throws BadEntityException {
+
+        DemoConfig.USE_LAZY_LOGGER = Boolean.FALSE;
+
+        smartLogger = SmartLogger.builder()
+                .logShortForm(false)
+                .onlyLogLoaded(true)
+                .logForeignSmartLoggers(true)
+                .build();
+
+
+
+        LogEntity savedLogEntity = logEntityService.save(logEntity);
+
+        LogChild child11 = logChildService.save(lazyCol1_child1);
+        child11.setLogEntity(savedLogEntity);
+
+        savedLogEntity.getLazyChildren1().add(child11);
+
+        // should also only log short form of logChild2 -> propagation
+        LogChild2 logChild2 = logChild2Service.save(lazyCol2_child1);
+        logChild2.setLogEntity(savedLogEntity);
+
+        savedLogEntity.getLazyChildren2().add(logChild2);
+
+
+        TestTransaction.flagForCommit();
+        TestTransaction.end();
+
+        String logResult = smartLogger.toString(savedLogEntity);
+        System.err.println(logResult);
+
+        assertContainsStringOnce(logResult, LOG_ENTITY_NAME);
+        assertContainsStringOnce(logResult, LAZY_COL2_ENTITY1_NAME);
+        assertContainsStringOnce(logResult, LAZY_COL1_ENTITY1_NAME);
+        assertContainsStringOnce(logResult,COL2_ENTITY1_SECOND_MAIN_PROPERTY);
+        assertContainsStringOnce(logResult,COL2_ENTITY1_SECOND_MAIN_PROPERTY_KEY);
+        assertContainsString(logResult,CIRCULAR_REFERENCE_STRING,2);
+
+
+        Assertions.assertFalse(logResult.contains(CIRCULAR_REFERENCE_STRING));
+        // other fields ignored, not even key to see
+        Assertions.assertFalse(logResult.contains(COL2_ENTITY1_SIDE_PROPERTY_KEY));
+        Assertions.assertFalse(logResult.contains(COL2_ENTITY1_SIDE_PROPERTY));
+
+    }
+
 
     @Transactional
     @Test
@@ -165,6 +212,8 @@ class SmartLoggerTest {
 
         smartLogger = SmartLogger.builder()
                 .logShortForm(true)
+                .onlyLogLoaded(true)
+                .logForeignSmartLoggers(false)
                 .build();
 
 
@@ -197,9 +246,9 @@ class SmartLoggerTest {
         assertContainsStringOnce(logResult, LAZY_COL2_ENTITY1_NAME);
         assertContainsStringOnce(logResult,COL2_ENTITY1_SECOND_MAIN_PROPERTY);
         assertContainsStringOnce(logResult,COL2_ENTITY1_SECOND_MAIN_PROPERTY_KEY);
+        assertContainsStringOnce(logResult,CIRCULAR_REFERENCE_STRING);
 
 
-        Assertions.assertFalse(logResult.contains(CIRCULAR_REFERENCE_STRING));
         // other fields ignored, not even key to see
         Assertions.assertFalse(logResult.contains(LOG_ENTITY_LAZY_CHILDREN1_KEY));
         Assertions.assertFalse(logResult.contains(LAZY_COL1_ENTITY1_NAME));
@@ -214,14 +263,14 @@ class SmartLoggerTest {
     @Test
     void prohibitsBackrefEndlessLoop() throws BadEntityException {
 
-        DemoConfig.USE_LAZY_LOGGER = Boolean.TRUE;
+//        DemoConfig.USE_LAZY_LOGGER = Boolean.TRUE;
 
+        smartLogger =  SmartLogger.builder()
+                .logShortOnAlreadySeen(true)
+                .logForeignSmartLoggers(false)
+                .onlyLogLoaded(true)
+                .build();
 
-//        lazyLogger = LazyLogger.builder()
-//                .ignoreLazyException(Boolean.TRUE)
-//                .ignoreEntities(Boolean.FALSE)
-//                .onlyLogLoaded(Boolean.FALSE)
-//                .build();
 
 
         LogEntity savedLogEntity = logEntityService.save(logEntity);
@@ -238,7 +287,7 @@ class SmartLoggerTest {
         TestTransaction.flagForCommit();
         TestTransaction.end();
 
-        String logResult = savedLogEntity.toString();
+        String logResult = smartLogger.toString(savedLogEntity);
         System.err.println(logResult);
 //        String s = savedLogEntity.toString();
 
@@ -258,8 +307,9 @@ class SmartLoggerTest {
 
 //        DemoConfig.USE_LAZY_LOGGER = Boolean.TRUE;
 
-        SmartLogger logger =  SmartLogger.builder()
+        smartLogger =  SmartLogger.builder()
                 .logShortOnAlreadySeen(true)
+                .logForeignSmartLoggers(false)
                 .build();
 
 
@@ -285,7 +335,7 @@ class SmartLoggerTest {
         TestTransaction.flagForCommit();
         TestTransaction.end();
 
-        String logResult = logger.toString(savedLogEntity);
+        String logResult = smartLogger.toString(savedLogEntity);
         System.err.println(logResult);
 //        String s = savedLogEntity.toString();
 
@@ -300,7 +350,7 @@ class SmartLoggerTest {
         // unimportant skipped when entity is logged > 1 times
         assertContainsString(logResult,COL2_ENTITY1_SIDE_PROPERTY,1);
         assertContainsString(logResult,COL2_ENTITY1_SIDE_PROPERTY_KEY,1);
-        assertContainsString(logResult, CIRCULAR_REFERENCE_STRING, 3);
+        assertContainsString(logResult, CIRCULAR_REFERENCE_STRING, 4);
 //        // assertContainsIdOnce(logResult, savedLogEntity.getId());
 //        // assertContainsIdOnce(logResult, child11.getId());
 //        // assertContainsIdOnce(logResult, child12.getId());
@@ -312,7 +362,9 @@ class SmartLoggerTest {
 
 //        DemoConfig.USE_LAZY_LOGGER = Boolean.TRUE;
 
-        SmartLogger logger =  SmartLogger.builder()
+        smartLogger =  SmartLogger.builder()
+                .logForeignSmartLoggers(false)
+                .onlyLogLoaded(true)
                 .build();
 
         LogEntity savedLogEntity = logEntityService.save(logEntity);
@@ -335,7 +387,7 @@ class SmartLoggerTest {
         TestTransaction.flagForCommit();
         TestTransaction.end();
 
-        String logResult = logger.toString(savedLogEntity);
+        String logResult = smartLogger.toString(savedLogEntity);
         System.err.println(logResult);
 //        String s = savedLogEntity.toString();
 
@@ -362,12 +414,11 @@ class SmartLoggerTest {
         DemoConfig.USE_LAZY_LOGGER = Boolean.TRUE;
 
 
-//        lazyLogger = LazyLogger.builder()
-//                .ignoreLazyException(Boolean.TRUE)
-//                .ignoreEntities(Boolean.FALSE)
-//                .onlyLogLoaded(Boolean.FALSE)
-//                .build();
 
+        smartLogger =  SmartLogger.builder()
+                .logForeignSmartLoggers(false)
+                .onlyLogLoaded(true)
+                .build();
 
         LogEntity savedLogEntity = logEntityService.save(logEntity);
 
@@ -383,7 +434,7 @@ class SmartLoggerTest {
         TestTransaction.flagForCommit();
         TestTransaction.end();
 
-        String logResult = savedLogEntity.toString();
+        String logResult = smartLogger.toString(savedLogEntity);
         System.err.println(logResult);
 
 
@@ -400,14 +451,13 @@ class SmartLoggerTest {
     @Test
     void prohibitsBackrefManyToManyEndlessLoop_someHaveBackRefInSetAndNonBackref() throws BadEntityException {
 
-        DemoConfig.USE_LAZY_LOGGER = Boolean.TRUE;
+//        DemoConfig.USE_LAZY_LOGGER = Boolean.TRUE;
 
 
-//        lazyLogger = LazyLogger.builder()
-//                .ignoreLazyException(Boolean.TRUE)
-//                .ignoreEntities(Boolean.FALSE)
-//                .onlyLogLoaded(Boolean.FALSE)
-//                .build();
+        smartLogger = SmartLogger.builder()
+                .onlyLogLoaded(true)
+                .logForeignSmartLoggers(false)
+                .build();
 
 
         LogEntity savedLogEntity = logEntityService.save(logEntity);
@@ -430,7 +480,7 @@ class SmartLoggerTest {
         TestTransaction.flagForCommit();
         TestTransaction.end();
 
-        String logResult = savedLogEntity.toString();
+        String logResult = smartLogger.toString(savedLogEntity);
         System.err.println(logResult);
 
 
@@ -451,12 +501,11 @@ class SmartLoggerTest {
     @Test
     void canIgnoreLazyInitException() throws BadEntityException {
         smartLogger = SmartLogger.builder()
-                .ignoreLazyException(Boolean.TRUE)
-                .ignoreEntities(Boolean.FALSE)
-                .onlyLogLoaded(Boolean.FALSE)
+                .onlyLogLoaded(false)
+                .ignoreLazyException(true)
+                .logForeignSmartLoggers(false)
                 .build();
 
-        // LazyLogger.setEntityManager(entityManager);
 
 
         EagerSingleLogChild savedEagerSingleChild = eagerSingleLogChildService.save(eagerSingleChild);
@@ -488,12 +537,11 @@ class SmartLoggerTest {
     @Test
     void canThrowLazyInitException() throws BadEntityException {
         smartLogger = SmartLogger.builder()
-                .ignoreLazyException(Boolean.FALSE)
-                .ignoreEntities(Boolean.FALSE)
-                .onlyLogLoaded(Boolean.FALSE)
+                .logForeignSmartLoggers(false)
+                .onlyLogLoaded(false)
+                .ignoreLazyException(false)
                 .build();
 
-        // LazyLogger.setEntityManager(entityManager);
 
 
         EagerSingleLogChild savedEagerSingleChild = eagerSingleLogChildService.save(eagerSingleChild);
@@ -517,9 +565,8 @@ class SmartLoggerTest {
     @Test
     void canIgnoreAllEntities() throws BadEntityException {
         smartLogger = SmartLogger.builder()
-                .ignoreLazyException(Boolean.TRUE)
-                .ignoreEntities(Boolean.TRUE)
-                .onlyLogLoaded(Boolean.FALSE)
+                .ignoreEntities(true)
+                .logForeignSmartLoggers(false)
                 .build();
 
         // LazyLogger.setEntityManager(entityManager);
@@ -559,12 +606,10 @@ class SmartLoggerTest {
     @Test
     void canBlacklistFields() throws BadEntityException {
         smartLogger = SmartLogger.builder()
-                .ignoreLazyException(Boolean.TRUE)
-                .ignoreEntities(Boolean.FALSE)
-                .onlyLogLoaded(Boolean.FALSE)
+                .logForeignSmartLoggers(false)
+                .onlyLogLoaded(true)
                 .visiblyIgnoredProperties(Sets.newHashSet("eagerChild", "lazyChildren1"))
                 .build();
-        // LazyLogger.setEntityManager(entityManager);
 
         LogChild child11 = logChildService.save(lazyCol1_child1);
         child11.setLogEntity(logEntity);
@@ -611,11 +656,9 @@ class SmartLoggerTest {
     @Test
     void canIgnoreUnloadedEntities_andLogLoaded_inTransactionalContext() throws BadEntityException {
         smartLogger = SmartLogger.builder()
-                .ignoreLazyException(Boolean.TRUE)
-                .ignoreEntities(Boolean.FALSE)
-                .onlyLogLoaded(Boolean.TRUE)
+                .logForeignSmartLoggers(false)
+                .onlyLogLoaded(true)
                 .build();
-        // LazyLogger.setEntityManager(entityManager);
 
         // fill both lazy cols
         // lazyCol1 loaded -> gets Logged
@@ -690,11 +733,9 @@ class SmartLoggerTest {
     @Test
     void canIgnoreUnloadedEntities_andLogLoaded_inNotTransactionalContext() throws BadEntityException {
         smartLogger = SmartLogger.builder()
-                .ignoreLazyException(Boolean.TRUE)
-                .ignoreEntities(Boolean.FALSE)
-                .onlyLogLoaded(Boolean.TRUE)
+                .logForeignSmartLoggers(false)
+                .onlyLogLoaded(true)
                 .build();
-        // LazyLogger.setEntityManager(entityManager);
 
         // fill both lazy cols
         // lazyCol1 loaded -> gets Logged
@@ -759,12 +800,10 @@ class SmartLoggerTest {
     @Test
     void canIgnoreUnloadedEntities_andLogLoaded_butNotLogBlacklistedLoaded_inNotTransactionalContext() throws BadEntityException {
         smartLogger = SmartLogger.builder()
-                .ignoreLazyException(Boolean.TRUE)
-                .ignoreEntities(Boolean.FALSE)
-                .onlyLogLoaded(Boolean.TRUE)
+                .logForeignSmartLoggers(false)
+                .onlyLogLoaded(true)
                 .logLoadedBlacklist(Sets.newHashSet("lazyChildren2"))
                 .build();
-        // LazyLogger.setEntityManager(entityManager);
 
         // fill both lazy cols
         // lazyCol1 loaded -> gets Logged
@@ -831,12 +870,10 @@ class SmartLoggerTest {
         int maxEntitiesInCollections = 1;
 
         smartLogger = SmartLogger.builder()
-                .ignoreLazyException(Boolean.TRUE)
-                .ignoreEntities(Boolean.FALSE)
-                .onlyLogLoaded(Boolean.FALSE)
+                .logForeignSmartLoggers(false)
+                .onlyLogLoaded(true)
                 .maxEntitiesLoggedInCollections(maxEntitiesInCollections)
                 .build();
-        // LazyLogger.setEntityManager(entityManager);
 
         // fill both lazy cols
         // lazyCol1 loaded -> gets Logged
@@ -902,12 +939,10 @@ class SmartLoggerTest {
         maxEntityLimitations.put("eagerChildren", 3);
 
         smartLogger = SmartLogger.builder()
-                .ignoreLazyException(Boolean.TRUE)
-                .ignoreEntities(Boolean.FALSE)
-                .onlyLogLoaded(Boolean.FALSE)
+                .logForeignSmartLoggers(false)
+                .onlyLogLoaded(true)
                 .maxEntitiesLoggedMap(maxEntityLimitations)
                 .build();
-        // LazyLogger.setEntityManager(entityManager);
 
         // fill both lazy cols
         // lazyCol1 loaded -> gets Logged
@@ -985,12 +1020,10 @@ class SmartLoggerTest {
     @Test
     void canMapToId() throws BadEntityException {
         smartLogger = SmartLogger.builder()
-                .ignoreLazyException(Boolean.TRUE)
-                .ignoreEntities(Boolean.FALSE)
+                .logForeignSmartLoggers(false)
+                .onlyLogLoaded(true)
                 .idOnly(Boolean.TRUE)
-                .onlyLogLoaded(Boolean.FALSE)
                 .build();
-        // LazyLogger.setEntityManager(entityManager);
 
         // fill both lazy cols
         // lazyCol1 loaded -> gets Logged
@@ -1064,10 +1097,9 @@ class SmartLoggerTest {
 
 
         smartLogger = SmartLogger.builder()
-                .ignoreLazyException(Boolean.TRUE)
-                .ignoreEntities(Boolean.FALSE)
+                .logForeignSmartLoggers(false)
+                .onlyLogLoaded(true)
                 .idOnly(Boolean.TRUE)
-                .onlyLogLoaded(Boolean.FALSE)
                 .maxEntitiesLoggedMap(maxEntityLimitations)
                 .build();
         // LazyLogger.setEntityManager(entityManager);
