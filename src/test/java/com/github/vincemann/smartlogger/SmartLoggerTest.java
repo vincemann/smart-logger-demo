@@ -358,8 +358,11 @@ class SmartLoggerTest {
     @Transactional
     @Test
     void canLogTwoSameEntities_withoutBeingDetectedAsCircularRef() throws BadEntityException {
+        _canLogTwoSameEntities_withoutBeingDetectedAsCircularRef();
+    }
 
-//        DemoConfig.USE_LAZY_LOGGER = Boolean.TRUE;
+    private String _canLogTwoSameEntities_withoutBeingDetectedAsCircularRef() throws BadEntityException {
+        //        DemoConfig.USE_LAZY_LOGGER = Boolean.TRUE;
 
         smartLogger =  SmartLogger.builder()
                 .build();
@@ -402,7 +405,21 @@ class SmartLoggerTest {
 //        // assertContainsIdOnce(logResult, savedLogEntity.getId());
 //        // assertContainsIdOnce(logResult, child11.getId());
 //        // assertContainsIdOnce(logResult, child12.getId());
+        return logResult;
     }
+
+    @Transactional
+    @Test
+    void canLogTwoSameEntities_hasNoState() throws BadEntityException {
+
+        _canLogTwoSameEntities_withoutBeingDetectedAsCircularRef();
+
+        Assertions.assertNull(ALREADY_SEEN_MAP.get(Thread.currentThread().getId()));
+        Assertions.assertNull(CIRCULAR_REF_MAP.get(Thread.currentThread().getId()));
+        Assertions.assertNull(RECURSION_DEPTH_MAP.get(Thread.currentThread().getId()));
+        Assertions.assertNull(DIRECT_CALL_MAP.get(Thread.currentThread().getId()));
+    }
+
 
     @Transactional
     @Test

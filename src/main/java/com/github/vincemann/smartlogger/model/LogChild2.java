@@ -1,9 +1,9 @@
 package com.github.vincemann.smartlogger.model;
 
 import com.fasterxml.jackson.annotation.JsonBackReference;
-import com.github.vincemann.smartlogger.MainToStringProperty;
+import com.github.vincemann.smartlogger.ShortToStringProperty;
 import com.github.vincemann.smartlogger.SmartLogger;
-import com.github.vincemann.smartlogger.SmartToString;
+import com.github.vincemann.smartlogger.CallToString;
 import com.github.vincemann.springrapid.autobidir.model.parent.annotation.BiDirParentEntity;
 import lombok.Builder;
 import lombok.Getter;
@@ -22,24 +22,24 @@ import static com.github.vincemann.smartlogger.config.DemoConfig.USE_SMART_LOGGE
 @NoArgsConstructor
 @Entity
 @Table(name = "log_children2")
-@SmartToString
+@CallToString
 public class LogChild2 extends LogIdentifiableEntity {
 
     public static SmartLogger LOGGER;
 
-    @MainToStringProperty
+    @ShortToStringProperty
     @ManyToOne
     @JoinColumn(name = "log_entity_id")
     @JsonBackReference
     @BiDirParentEntity
     private LogEntity logEntity;
 
-    @MainToStringProperty
+    @ShortToStringProperty
     private String name;
 
     private String sideProperty;
 
-    @MainToStringProperty
+    @ShortToStringProperty
     private String secondMainProperty;
 
 
