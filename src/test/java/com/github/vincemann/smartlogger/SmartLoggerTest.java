@@ -47,8 +47,8 @@ class SmartLoggerTest {
     static final String LAZY_COL2_ENTITY2_NAME = "lazy Col2 Entity2";
     static final String LOG_CHILD4_1_NAME = "first log child 4";
     static final String LOG_CHILD4_2_NAME = "second log child 4";
-    private static final String LOG_CHILD4_3_NAME = "third log child 4";
-    private static final String LOG_ENTITY2_NAME = "second log-entity";
+    static final String LOG_CHILD4_3_NAME = "third log child 4";
+    static final String LOG_ENTITY2_NAME = "second log-entity";
 
 
     @Autowired
@@ -155,12 +155,15 @@ class SmartLoggerTest {
         eagerSingleChild = new EagerSingleLogChild(EAGER_CHILD_NAME);
     }
 
-    @Disabled
     @Transactional
     @Test
     void smartLoggerCallsSmartLoggerOfDiffClass_ifIndicated() throws BadEntityException {
 
-        DemoConfig.USE_LAZY_LOGGER = Boolean.FALSE;
+        DemoConfig.USE_LAZY_LOGGER = Boolean.TRUE;
+
+        LogChild2.LOGGER = SmartLogger.builder()
+                .logShortForm(true)
+                .build();
 
         smartLogger = SmartLogger.builder()
                 .logShortForm(false)
@@ -198,7 +201,6 @@ class SmartLoggerTest {
         assertContainsString(logResult,CIRCULAR_REFERENCE_STRING,2);
 
 
-        Assertions.assertFalse(logResult.contains(CIRCULAR_REFERENCE_STRING));
         // other fields ignored, not even key to see
         Assertions.assertFalse(logResult.contains(COL2_ENTITY1_SIDE_PROPERTY_KEY));
         Assertions.assertFalse(logResult.contains(COL2_ENTITY1_SIDE_PROPERTY));

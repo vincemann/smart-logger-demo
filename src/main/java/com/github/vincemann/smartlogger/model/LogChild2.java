@@ -25,6 +25,8 @@ import static com.github.vincemann.smartlogger.config.DemoConfig.USE_LAZY_LOGGER
 @SmartToString
 public class LogChild2 extends LogIdentifiableEntity {
 
+    public static SmartLogger LOGGER;
+
     @MainToStringProperty
     @ManyToOne
     @JoinColumn(name = "log_entity_id")
@@ -58,11 +60,7 @@ public class LogChild2 extends LogIdentifiableEntity {
     @Override
     public String toString() {
         if (USE_LAZY_LOGGER){
-            SmartLogger logger = SmartLogger.builder()
-                    .logShortForm(true)
-                    .build();
-
-            return logger.toString(this);
+            return LOGGER.toString(this);
         }else {
             return "LogChild2{" +
                     "name='" + name + '\'' +
