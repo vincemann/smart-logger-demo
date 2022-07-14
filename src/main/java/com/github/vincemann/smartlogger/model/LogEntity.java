@@ -13,7 +13,7 @@ import javax.persistence.*;
 import java.util.HashSet;
 import java.util.Set;
 
-import static com.github.vincemann.smartlogger.config.DemoConfig.USE_LAZY_LOGGER;
+import static com.github.vincemann.smartlogger.config.DemoConfig.USE_SMART_LOGGER;
 
 
 @Setter
@@ -81,7 +81,7 @@ public class LogEntity extends LogIdentifiableEntity {
 
     @Override
     public String toString() {
-        if (USE_LAZY_LOGGER){
+        if (USE_SMART_LOGGER){
             SmartLogger logger =  SmartLogger.builder()
                     .logShortOnAlreadySeen(true)
                     .build();

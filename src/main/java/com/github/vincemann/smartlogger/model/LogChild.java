@@ -2,7 +2,6 @@ package com.github.vincemann.smartlogger.model;
 
 import com.fasterxml.jackson.annotation.JsonBackReference;
 import com.github.vincemann.springrapid.autobidir.model.child.annotation.UniDirChildCollection;
-import com.github.vincemann.springrapid.autobidir.model.child.annotation.UniDirChildEntity;
 import com.github.vincemann.springrapid.autobidir.model.parent.annotation.BiDirParentEntity;
 import com.github.vincemann.smartlogger.SmartLogger;
 import lombok.*;
@@ -12,7 +11,7 @@ import javax.persistence.*;
 import java.util.HashSet;
 import java.util.Set;
 
-import static com.github.vincemann.smartlogger.config.DemoConfig.USE_LAZY_LOGGER;
+import static com.github.vincemann.smartlogger.config.DemoConfig.USE_SMART_LOGGER;
 
 @Setter
 @Getter
@@ -48,7 +47,7 @@ public class LogChild extends LogIdentifiableEntity {
 
     @Override
     public String toString() {
-        if (USE_LAZY_LOGGER){
+        if (USE_SMART_LOGGER){
             SmartLogger logger = SmartLogger.builder()
                     .logShortForm(true)
                     .build();

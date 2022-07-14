@@ -100,7 +100,11 @@ class SmartLoggerTest {
     @BeforeEach
     void setUp() {
 
-        DemoConfig.USE_LAZY_LOGGER = Boolean.FALSE;
+        DemoConfig.USE_SMART_LOGGER = Boolean.FALSE;
+        SmartLogger.DEFAULT_CONFIG = SmartLogger.Config.builder()
+                .logShortOnAlreadySeen(false)
+                .logForeignSmartLoggers(false)
+                .build();
 
 
         logEntity = LogEntity.builder()
@@ -159,7 +163,7 @@ class SmartLoggerTest {
     @Test
     void smartLoggerCallsSmartLoggerOfDiffClass_ifIndicated() throws BadEntityException {
 
-        DemoConfig.USE_LAZY_LOGGER = Boolean.TRUE;
+        DemoConfig.USE_SMART_LOGGER = Boolean.TRUE;
 
         LogChild2.LOGGER = SmartLogger.builder()
                 .logShortForm(true)
@@ -167,7 +171,6 @@ class SmartLoggerTest {
 
         smartLogger = SmartLogger.builder()
                 .logShortForm(false)
-                .onlyLogLoaded(true)
                 .logForeignSmartLoggers(true)
                 .build();
 
@@ -214,8 +217,6 @@ class SmartLoggerTest {
 
         smartLogger = SmartLogger.builder()
                 .logShortForm(true)
-                .onlyLogLoaded(true)
-                .logForeignSmartLoggers(false)
                 .build();
 
 
@@ -268,9 +269,6 @@ class SmartLoggerTest {
 //        DemoConfig.USE_LAZY_LOGGER = Boolean.TRUE;
 
         smartLogger =  SmartLogger.builder()
-                .logShortOnAlreadySeen(true)
-                .logForeignSmartLoggers(false)
-                .onlyLogLoaded(true)
                 .build();
 
 
@@ -311,7 +309,6 @@ class SmartLoggerTest {
 
         smartLogger =  SmartLogger.builder()
                 .logShortOnAlreadySeen(true)
-                .logForeignSmartLoggers(false)
                 .build();
 
 
@@ -365,8 +362,6 @@ class SmartLoggerTest {
 //        DemoConfig.USE_LAZY_LOGGER = Boolean.TRUE;
 
         smartLogger =  SmartLogger.builder()
-                .logForeignSmartLoggers(false)
-                .onlyLogLoaded(true)
                 .build();
 
         LogEntity savedLogEntity = logEntityService.save(logEntity);
@@ -413,13 +408,11 @@ class SmartLoggerTest {
     @Test
     void prohibitsBackrefManyToManyEndlessLoop() throws BadEntityException {
 
-        DemoConfig.USE_LAZY_LOGGER = Boolean.TRUE;
+        DemoConfig.USE_SMART_LOGGER = Boolean.TRUE;
 
 
 
         smartLogger =  SmartLogger.builder()
-                .logForeignSmartLoggers(false)
-                .onlyLogLoaded(true)
                 .build();
 
         LogEntity savedLogEntity = logEntityService.save(logEntity);
@@ -457,8 +450,6 @@ class SmartLoggerTest {
 
 
         smartLogger = SmartLogger.builder()
-                .onlyLogLoaded(true)
-                .logForeignSmartLoggers(false)
                 .build();
 
 
@@ -505,7 +496,6 @@ class SmartLoggerTest {
         smartLogger = SmartLogger.builder()
                 .onlyLogLoaded(false)
                 .ignoreLazyException(true)
-                .logForeignSmartLoggers(false)
                 .build();
 
 
@@ -539,7 +529,6 @@ class SmartLoggerTest {
     @Test
     void canThrowLazyInitException() throws BadEntityException {
         smartLogger = SmartLogger.builder()
-                .logForeignSmartLoggers(false)
                 .onlyLogLoaded(false)
                 .ignoreLazyException(false)
                 .build();
@@ -568,7 +557,6 @@ class SmartLoggerTest {
     void canIgnoreAllEntities() throws BadEntityException {
         smartLogger = SmartLogger.builder()
                 .ignoreEntities(true)
-                .logForeignSmartLoggers(false)
                 .build();
 
         // LazyLogger.setEntityManager(entityManager);
@@ -608,8 +596,6 @@ class SmartLoggerTest {
     @Test
     void canBlacklistFields() throws BadEntityException {
         smartLogger = SmartLogger.builder()
-                .logForeignSmartLoggers(false)
-                .onlyLogLoaded(true)
                 .visiblyIgnoredProperties(Sets.newHashSet("eagerChild", "lazyChildren1"))
                 .build();
 
@@ -658,8 +644,6 @@ class SmartLoggerTest {
     @Test
     void canIgnoreUnloadedEntities_andLogLoaded_inTransactionalContext() throws BadEntityException {
         smartLogger = SmartLogger.builder()
-                .logForeignSmartLoggers(false)
-                .onlyLogLoaded(true)
                 .build();
 
         // fill both lazy cols
@@ -735,8 +719,6 @@ class SmartLoggerTest {
     @Test
     void canIgnoreUnloadedEntities_andLogLoaded_inNotTransactionalContext() throws BadEntityException {
         smartLogger = SmartLogger.builder()
-                .logForeignSmartLoggers(false)
-                .onlyLogLoaded(true)
                 .build();
 
         // fill both lazy cols
@@ -802,8 +784,6 @@ class SmartLoggerTest {
     @Test
     void canIgnoreUnloadedEntities_andLogLoaded_butNotLogBlacklistedLoaded_inNotTransactionalContext() throws BadEntityException {
         smartLogger = SmartLogger.builder()
-                .logForeignSmartLoggers(false)
-                .onlyLogLoaded(true)
                 .logLoadedBlacklist(Sets.newHashSet("lazyChildren2"))
                 .build();
 
@@ -872,8 +852,6 @@ class SmartLoggerTest {
         int maxEntitiesInCollections = 1;
 
         smartLogger = SmartLogger.builder()
-                .logForeignSmartLoggers(false)
-                .onlyLogLoaded(true)
                 .maxEntitiesLoggedInCollections(maxEntitiesInCollections)
                 .build();
 
@@ -941,8 +919,6 @@ class SmartLoggerTest {
         maxEntityLimitations.put("eagerChildren", 3);
 
         smartLogger = SmartLogger.builder()
-                .logForeignSmartLoggers(false)
-                .onlyLogLoaded(true)
                 .maxEntitiesLoggedMap(maxEntityLimitations)
                 .build();
 
@@ -1022,9 +998,7 @@ class SmartLoggerTest {
     @Test
     void canMapToId() throws BadEntityException {
         smartLogger = SmartLogger.builder()
-                .logForeignSmartLoggers(false)
-                .onlyLogLoaded(true)
-                .idOnly(Boolean.TRUE)
+                .idOnly(true)
                 .build();
 
         // fill both lazy cols
@@ -1099,9 +1073,7 @@ class SmartLoggerTest {
 
 
         smartLogger = SmartLogger.builder()
-                .logForeignSmartLoggers(false)
-                .onlyLogLoaded(true)
-                .idOnly(Boolean.TRUE)
+                .idOnly(true)
                 .maxEntitiesLoggedMap(maxEntityLimitations)
                 .build();
         // LazyLogger.setEntityManager(entityManager);

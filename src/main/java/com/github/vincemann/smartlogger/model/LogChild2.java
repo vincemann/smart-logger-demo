@@ -15,7 +15,7 @@ import javax.persistence.JoinColumn;
 import javax.persistence.ManyToOne;
 import javax.persistence.Table;
 
-import static com.github.vincemann.smartlogger.config.DemoConfig.USE_LAZY_LOGGER;
+import static com.github.vincemann.smartlogger.config.DemoConfig.USE_SMART_LOGGER;
 
 @Setter
 @Getter
@@ -59,7 +59,7 @@ public class LogChild2 extends LogIdentifiableEntity {
 
     @Override
     public String toString() {
-        if (USE_LAZY_LOGGER){
+        if (USE_SMART_LOGGER){
             return LOGGER.toString(this);
         }else {
             return "LogChild2{" +
