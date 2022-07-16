@@ -27,14 +27,14 @@ public class LogEntity extends LogIdentifiableEntity {
     private String name;
 
     @Builder
-    public LogEntity(String name, Set<LogChild> lazyChildren1, Set<LogChild2> lazyChildren2, Set<LogChild3> eagerChildren, LogParent lazyParent) {
+    public LogEntity(String name, Set<LogChild> lazyChildren1, Set<LogChild2> lazyChildren2, Set<LogChild3> logChildren3, LogParent lazyParent) {
         this.name = name;
         if (lazyChildren1!=null)
             this.lazyChildren1 = lazyChildren1;
         if (lazyChildren2!=null)
             this.lazyChildren2 = lazyChildren2;
-        if (eagerChildren != null)
-            this.eagerChildren = eagerChildren;
+        if (logChildren3 != null)
+            this.logChildren3 = logChildren3;
         this.lazyParent = lazyParent;
     }
 
@@ -62,7 +62,7 @@ public class LogEntity extends LogIdentifiableEntity {
     @OneToMany(cascade = CascadeType.ALL, mappedBy = "logEntity",fetch = FetchType.EAGER)
     @BiDirChildCollection(LogChild3.class)
     @JsonManagedReference
-    private Set<LogChild3> eagerChildren = new HashSet<>();
+    private Set<LogChild3> logChildren3 = new HashSet<>();
 
     @OneToOne(cascade = CascadeType.ALL, fetch = FetchType.EAGER)
     @BiDirChildEntity
