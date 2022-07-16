@@ -34,9 +34,9 @@ class SmartLoggerTest {
     static final String LAZY_COL1_ENTITY1_NAME = "lazy Col1 Entity1";
     static final String LAZY_COL1_ENTITY2_NAME = "lazy Col1 Entity2";
     static final String COL3_ENTITY1_NAME = "first log entity3";
-    static final String COL3_ENTITY1_SIDE_PROPERTY = "SIDE-PROPERTY";
-    static final String COL3_ENTITY2_SIDE_PROPERTY = "second SIDE-P roperty";
-    static final String COL3_SIDE_PROPERTY_KEY = "sideProperty";
+    static final String COL3_ENTITY1_SIDE_PROPERTY = "COl3S1DE-PROPERTY";
+    static final String COL3_ENTITY2_SIDE_PROPERTY = "second S1DE-P-roperty";
+    static final String COL3_SIDE_PROPERTY_KEY = "s1deProperty";
     static final String COL3_ENTITY2_NAME = "second log entity3";
     static final String LAZY_PARENT_NAME = "lazy parent";
     static final String LAZY_CHILD_NAME = "lazy child";
@@ -132,12 +132,12 @@ class SmartLoggerTest {
 
         logChild3_1 = LogChild3.builder()
                 .name(COL3_ENTITY1_NAME)
-                .sideProperty(COL3_ENTITY1_SIDE_PROPERTY)
+                .s1deProperty(COL3_ENTITY1_SIDE_PROPERTY)
                 .build();
 
         logChild3_2 = LogChild3.builder()
                 .name(COL3_ENTITY2_NAME)
-                .sideProperty(COL3_ENTITY2_SIDE_PROPERTY)
+                .s1deProperty(COL3_ENTITY2_SIDE_PROPERTY)
                 .build();
 
         lazyCol2_child1 = LogChild2.builder()
@@ -362,12 +362,13 @@ class SmartLoggerTest {
 
     @Transactional
     @Test
-    void logAnnotatedFieldInShortForm() throws BadEntityException {
+    void logAnnotatedCollectionFieldInShortForm() throws BadEntityException {
 
 //        DemoConfig.USE_LAZY_LOGGER = Boolean.TRUE;
 
         smartLogger =  SmartLogger.builder()
                 .logShortOnAlreadySeen(false)
+                .callToString(false)
                 .build();
 
 
@@ -405,18 +406,79 @@ class SmartLoggerTest {
         assertContainsStringOnce(logResult, LOG_ENTITY_NAME);
         assertContainsStringOnce(logResult, COL3_ENTITY1_NAME);
         assertContainsStringOnce(logResult, COL3_ENTITY2_NAME);
-        assertContainsStringOnce(logResult, COL3_ENTITY2_NAME);
         assertContainsString(logResult, CIRCULAR_REFERENCE_STRING, 3);
+
+        assertContainsStringOnce(logResult, LAZY_COL2_ENTITY1_NAME);
+        assertContainsStringOnce(logResult,COL2_ENTITY1_SECOND_MAIN_PROPERTY);
+        assertContainsStringOnce(logResult, COL2_SECOND_MAIN_PROPERTY_KEY);
+        assertContainsStringOnce(logResult, COL2_SIDE_PROPERTY_KEY);
+        assertContainsStringOnce(logResult, COL2_ENTITY1_SIDE_PROPERTY);
+
+
         Assertions.assertFalse(logResult.contains(COL3_SIDE_PROPERTY_KEY));
         Assertions.assertFalse(logResult.contains(COL3_ENTITY1_SIDE_PROPERTY));
         Assertions.assertFalse(logResult.contains(COL3_ENTITY2_SIDE_PROPERTY));
+    }
 
+    @Disabled
+    @Transactional
+    @Test
+    void logAnnotatedSingleEntityFieldInShortForm() throws BadEntityException {
+
+//        DemoConfig.USE_LAZY_LOGGER = Boolean.TRUE;
+
+        smartLogger =  SmartLogger.builder()
+                .logShortOnAlreadySeen(false)
+                .callToString(false)
+                .build();
+
+
+
+
+
+        LogEntity savedLogEntity = logEntityService.save(logEntity);
+
+        // this will be logged twice
+        LogChild3 logChild31 = logChild3Service.save(logChild3_1);
+        logChild31.setLogEntity(savedLogEntity);
+
+        // this will be logged twice
+        LogChild3 logChild32 = logChild3Service.save(logChild3_2);
+        logChild32.setLogEntity(savedLogEntity);
+
+
+
+        LogChild2 logChild2 = logChild2Service.save(lazyCol2_child1);
+        logChild2.setLogEntity(savedLogEntity);
+
+
+        savedLogEntity.getLazyChildren2().add(logChild2);
+        savedLogEntity.getLogChildren3().add(logChild31);
+        savedLogEntity.getLogChildren3().add(logChild32);
+
+        TestTransaction.flagForCommit();
+        TestTransaction.end();
+
+        String logResult = smartLogger.toString(savedLogEntity);
+        System.err.println(logResult);
+//        String s = savedLogEntity.toString();
+
+
+        assertContainsStringOnce(logResult, LOG_ENTITY_NAME);
+        assertContainsStringOnce(logResult, COL3_ENTITY1_NAME);
+        assertContainsStringOnce(logResult, COL3_ENTITY2_NAME);
+        assertContainsString(logResult, CIRCULAR_REFERENCE_STRING, 3);
 
         assertContainsStringOnce(logResult, LAZY_COL2_ENTITY1_NAME);
-        assertContainsStringOnce(logResult,COL2_ENTITY1_SIDE_PROPERTY);
-        assertContainsStringOnce(logResult, COL2_SIDE_PROPERTY_KEY);
         assertContainsStringOnce(logResult,COL2_ENTITY1_SECOND_MAIN_PROPERTY);
         assertContainsStringOnce(logResult, COL2_SECOND_MAIN_PROPERTY_KEY);
+        assertContainsStringOnce(logResult, COL2_SIDE_PROPERTY_KEY);
+        assertContainsStringOnce(logResult, COL2_ENTITY1_SIDE_PROPERTY);
+
+
+        Assertions.assertFalse(logResult.contains(COL3_SIDE_PROPERTY_KEY));
+        Assertions.assertFalse(logResult.contains(COL3_ENTITY1_SIDE_PROPERTY));
+        Assertions.assertFalse(logResult.contains(COL3_ENTITY2_SIDE_PROPERTY));
     }
 
     @Transactional
@@ -476,11 +538,12 @@ class SmartLoggerTest {
     void canLogTwoSameEntities_hasNoState() throws BadEntityException {
 
         _canLogTwoSameEntities_withoutBeingDetectedAsCircularRef();
-
-        Assertions.assertNull(ALREADY_SEEN_MAP.get(Thread.currentThread().getId()));
-        Assertions.assertNull(CIRCULAR_REF_MAP.get(Thread.currentThread().getId()));
-        Assertions.assertNull(RECURSION_DEPTH_MAP.get(Thread.currentThread().getId()));
-        Assertions.assertNull(DIRECT_CALL_MAP.get(Thread.currentThread().getId()));
+        State state = STATE_MAP.get(Thread.currentThread().getId());
+        Assertions.assertEquals(0,state.getAlreadySeen().size());
+        Assertions.assertEquals(0,state.getCircularRefAlreadySeen().size());
+        Assertions.assertNull(state.getRecursionDepth());
+        Assertions.assertNull(state.getCallToString());
+        Assertions.assertNull(state.getShortCall());
     }
 
 

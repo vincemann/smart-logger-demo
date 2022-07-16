@@ -27,24 +27,24 @@ public class LogChild3 extends LogIdentifiableEntity {
     @ShortToStringProperty
     private LogEntity logEntity;
 
-    private String sideProperty;
+    private String s1deProperty;
 
     @ShortToStringProperty
     private String name;
 
 
 
-    public LogChild3(String name, String sideProperty) {
+    public LogChild3(String name, String s1deProperty) {
         this.name = name;
-        this.sideProperty = sideProperty;
+        this.s1deProperty = s1deProperty;
     }
 
 
 
     @Builder
-    public LogChild3(Long id, String name, LogEntity logEntity, String sideProperty) {
+    public LogChild3(Long id, String name, LogEntity logEntity, String s1deProperty) {
         setId(id);
-        this.sideProperty = sideProperty;
+        this.s1deProperty = s1deProperty;
         this.logEntity = logEntity;
         this.name = name;
     }
