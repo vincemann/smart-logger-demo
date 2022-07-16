@@ -434,8 +434,6 @@ class SmartLoggerTest {
 
 
 
-
-
         LogEntity savedLogEntity = logEntityService.save(logEntity);
 
         // this will be logged twice
@@ -539,11 +537,12 @@ class SmartLoggerTest {
 
         _canLogTwoSameEntities_withoutBeingDetectedAsCircularRef();
         State state = STATE_MAP.get(Thread.currentThread().getId());
-        Assertions.assertEquals(0,state.getAlreadySeen().size());
-        Assertions.assertEquals(0,state.getCircularRefAlreadySeen().size());
-        Assertions.assertNull(state.getRecursionDepth());
-        Assertions.assertNull(state.getCallToString());
-        Assertions.assertNull(state.getShortCall());
+        Assertions.assertNull(state);
+//        Assertions.assertEquals(0,state.getAlreadySeen().size());
+//        Assertions.assertEquals(0,state.getCircularRefAlreadySeen().size());
+//        Assertions.assertNull(state.getRecursionDepth());
+//        Assertions.assertNull(state.getCallToString());
+//        Assertions.assertNull(state.getShortCall());
     }
 
 
