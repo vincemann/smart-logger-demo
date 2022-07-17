@@ -368,11 +368,72 @@ class SmartLoggerTest {
 
         smartLogger =  SmartLogger.builder()
                 .logShortOnAlreadySeen(false)
-                .callToString(false)
                 .build();
 
 
 
+
+
+        LogEntity savedLogEntity = logEntityService.save(logEntity);
+
+        // this will be logged twice
+        LogChild3 logChild31 = logChild3Service.save(logChild3_1);
+        logChild31.setLogEntity(savedLogEntity);
+
+        // this will be logged twice
+        LogChild3 logChild32 = logChild3Service.save(logChild3_2);
+        logChild32.setLogEntity(savedLogEntity);
+
+
+
+        LogChild2 logChild2 = logChild2Service.save(lazyCol2_child1);
+        logChild2.setLogEntity(savedLogEntity);
+
+
+        savedLogEntity.getLazyChildren2().add(logChild2);
+        savedLogEntity.getLogChildren3().add(logChild31);
+        savedLogEntity.getLogChildren3().add(logChild32);
+
+        TestTransaction.flagForCommit();
+        TestTransaction.end();
+
+        String logResult = smartLogger.toString(savedLogEntity);
+        System.err.println(logResult);
+//        String s = savedLogEntity.toString();
+
+
+        assertContainsStringOnce(logResult, LOG_ENTITY_NAME);
+        assertContainsStringOnce(logResult, COL3_ENTITY1_NAME);
+        assertContainsStringOnce(logResult, COL3_ENTITY2_NAME);
+        assertContainsString(logResult, CIRCULAR_REFERENCE_STRING, 3);
+
+        assertContainsStringOnce(logResult, LAZY_COL2_ENTITY1_NAME);
+        assertContainsStringOnce(logResult,COL2_ENTITY1_SECOND_MAIN_PROPERTY);
+        assertContainsStringOnce(logResult, COL2_SECOND_MAIN_PROPERTY_KEY);
+        assertContainsStringOnce(logResult, COL2_SIDE_PROPERTY_KEY);
+        assertContainsStringOnce(logResult, COL2_ENTITY1_SIDE_PROPERTY);
+
+
+        Assertions.assertFalse(logResult.contains(COL3_SIDE_PROPERTY_KEY));
+        Assertions.assertFalse(logResult.contains(COL3_ENTITY1_SIDE_PROPERTY));
+        Assertions.assertFalse(logResult.contains(COL3_ENTITY2_SIDE_PROPERTY));
+    }
+
+
+
+    @Transactional
+    @Test
+    void ignoreCertainFieldsShortForm() throws BadEntityException {
+
+//        DemoConfig.USE_LAZY_LOGGER = Boolean.TRUE;
+
+        smartLogger =  SmartLogger.builder()
+                .ignoreFieldsShortForm(Sets.newHashSet("lazyChildren2"))
+                .build();
+
+
+        // logchildren2 are not logged in short form
+        // logchildren3 are logged in short form -> not blacklisted
 
 
         LogEntity savedLogEntity = logEntityService.save(logEntity);
@@ -490,7 +551,7 @@ class SmartLoggerTest {
 
         smartLogger =  SmartLogger.builder()
                 .maxFieldLength(20)
-                .ignoreFieldShortForm(true)
+                .logFieldShortForm(false)
                 .build();
 
 
@@ -596,8 +657,6 @@ class SmartLoggerTest {
     void prohibitsBackrefManyToManyEndlessLoop() throws BadEntityException {
 
         DemoConfig.USE_SMART_LOGGER = Boolean.TRUE;
-
-
 
         smartLogger =  SmartLogger.builder()
                 .build();
