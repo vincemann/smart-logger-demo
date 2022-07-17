@@ -420,7 +420,6 @@ class SmartLoggerTest {
         Assertions.assertFalse(logResult.contains(COL3_ENTITY2_SIDE_PROPERTY));
     }
 
-    @Disabled
     @Transactional
     @Test
     void logAnnotatedSingleEntityFieldInShortForm() throws BadEntityException {
@@ -477,6 +476,52 @@ class SmartLoggerTest {
         Assertions.assertFalse(logResult.contains(COL3_SIDE_PROPERTY_KEY));
         Assertions.assertFalse(logResult.contains(COL3_ENTITY1_SIDE_PROPERTY));
         Assertions.assertFalse(logResult.contains(COL3_ENTITY2_SIDE_PROPERTY));
+    }
+
+    @Transactional
+    @Test
+    void maxFieldLengthExtendedGetsShortend() throws BadEntityException {
+
+//        DemoConfig.USE_LAZY_LOGGER = Boolean.TRUE;
+
+        String nameTooLong = "A".repeat(21);
+        String fixedName = "A".repeat(20) + "...";
+        Assertions.assertTrue(nameTooLong.length() > 20);
+
+        smartLogger =  SmartLogger.builder()
+                .maxFieldLength(20)
+                .ignoreFieldShortForm(true)
+                .build();
+
+
+
+        LogEntity savedLogEntity = logEntityService.save(logEntity);
+        savedLogEntity.setName(nameTooLong);
+
+        // this will be logged twice
+        LogChild3 logChild31 = logChild3Service.save(logChild3_1);
+        logChild31.setLogEntity(savedLogEntity);
+
+
+
+        savedLogEntity.getLogChildren3().add(logChild31);
+
+        TestTransaction.flagForCommit();
+        TestTransaction.end();
+
+        String logResult = smartLogger.toString(savedLogEntity);
+        System.err.println(logResult);
+
+
+        assertContainsStringOnce(logResult, fixedName);
+        assertContainsStringOnce(logResult, COL3_ENTITY1_NAME);
+        assertContainsStringOnce(logResult, COL3_ENTITY1_SIDE_PROPERTY);
+        assertContainsStringOnce(logResult, COL3_SIDE_PROPERTY_KEY);
+        assertContainsStringOnce(logResult, CIRCULAR_REFERENCE_STRING);
+
+
+        Assertions.assertFalse(logResult.contains(LOG_ENTITY_NAME));
+        Assertions.assertFalse(logResult.contains(nameTooLong));
     }
 
     @Transactional
