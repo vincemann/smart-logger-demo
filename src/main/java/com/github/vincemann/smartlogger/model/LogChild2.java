@@ -15,7 +15,7 @@ import javax.persistence.JoinColumn;
 import javax.persistence.ManyToOne;
 import javax.persistence.Table;
 
-import static com.github.vincemann.smartlogger.config.DemoConfig.USE_SMART_LOGGER;
+import static com.github.vincemann.smartlogger.config.LoggerConfig.USE_SMART_LOGGER;
 
 @Setter
 @Getter

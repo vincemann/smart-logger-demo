@@ -1,6 +1,6 @@
 package com.github.vincemann.smartlogger;
 
-import com.github.vincemann.smartlogger.config.DemoConfig;
+import com.github.vincemann.smartlogger.config.LoggerConfig;
 import com.github.vincemann.smartlogger.model.*;
 import com.github.vincemann.smartlogger.service.*;
 import com.github.vincemann.smartlogger.service.jpa.JpaLogChild2Service;
@@ -27,7 +27,7 @@ import static com.github.vincemann.smartlogger.SmartLogger.*;
 
 @ActiveProfiles(value = {RapidTestProfiles.TEST, RapidTestProfiles.SERVICE_TEST, RapidProfiles.SERVICE})
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.NONE)
-class SmartLoggerTest {
+class CustomLoggerTest {
 
 
     static final String LOG_ENTITY_NAME = "log.entity";
@@ -103,7 +103,7 @@ class SmartLoggerTest {
     @BeforeEach
     void setUp() {
 
-        DemoConfig.USE_SMART_LOGGER = Boolean.FALSE;
+        LoggerConfig.USE_SMART_LOGGER = Boolean.FALSE;
         SmartLogger.DEFAULT_CONFIG = SmartLogger.Config.builder()
                 .logShortOnAlreadySeen(false)
                 .callToString(false)
@@ -168,7 +168,7 @@ class SmartLoggerTest {
     @Test
     void smartLoggerCallsSmartLoggerOfDiffClass_ifIndicated() throws BadEntityException {
 
-        DemoConfig.USE_SMART_LOGGER = Boolean.TRUE;
+        LoggerConfig.USE_SMART_LOGGER = Boolean.TRUE;
 
         LogChild2.LOGGER = SmartLogger.builder()
                 .logShortForm(true)
@@ -587,6 +587,21 @@ class SmartLoggerTest {
 
     @Transactional
     @Test
+    void useDiffLoggersForDiffArgs_inAopLog() throws BadEntityException {
+
+        LogEntity savedLogEntity = logEntityService.save(logEntity);
+
+
+        LogChild2 logChild2 = logChild2Service.save(lazyCol2_child1);
+        logChild2.setLogEntity(savedLogEntity);
+
+
+        LogChild2 retVal = logChild2Service.testAop("gil", logChild2);
+        // need to checkout Logs yourself
+    }
+
+    @Transactional
+    @Test
     void canLogTwoSameEntities_withoutBeingDetectedAsCircularRef() throws BadEntityException {
         _canLogTwoSameEntities_withoutBeingDetectedAsCircularRef();
     }
@@ -656,7 +671,7 @@ class SmartLoggerTest {
     @Test
     void prohibitsBackrefManyToManyEndlessLoop() throws BadEntityException {
 
-        DemoConfig.USE_SMART_LOGGER = Boolean.TRUE;
+        LoggerConfig.USE_SMART_LOGGER = Boolean.TRUE;
 
         smartLogger =  SmartLogger.builder()
                 .build();

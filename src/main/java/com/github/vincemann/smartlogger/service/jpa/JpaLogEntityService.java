@@ -1,6 +1,6 @@
 package com.github.vincemann.smartlogger.service.jpa;
 
-import com.github.vincemann.aoplog.api.LogInteraction;
+import com.github.vincemann.aoplog.api.annotation.LogInteraction;
 import com.github.vincemann.smartlogger.model.LogEntity;
 import com.github.vincemann.smartlogger.repo.LogEntityRepository;
 import com.github.vincemann.smartlogger.service.LogEntityService;
