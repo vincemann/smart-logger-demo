@@ -8,6 +8,7 @@ import com.github.vincemann.smartlogger.service.*;
 import com.github.vincemann.smartlogger.service.jpa.JpaLogChild2Service;
 import com.github.vincemann.springrapid.core.service.exception.BadEntityException;
 import com.github.vincemann.springrapid.core.slicing.RapidProfiles;
+import com.github.vincemann.springrapid.core.util.ProxyUtils;
 import com.github.vincemann.springrapid.coretest.slicing.RapidTestProfiles;
 import com.github.vincemann.springrapid.coretest.util.TransactionalRapidTestUtil;
 import com.google.common.collect.Sets;
@@ -18,7 +19,6 @@ import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.SpyBean;
-import org.springframework.context.annotation.Configuration;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.transaction.TestTransaction;
 import org.springframework.transaction.annotation.Transactional;
@@ -28,6 +28,8 @@ import java.util.HashMap;
 import java.util.Map;
 
 import static com.github.vincemann.smartlogger.SmartLogger.*;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.refEq;
 
 
 @ActiveProfiles(value = {RapidTestProfiles.TEST, RapidTestProfiles.SERVICE_TEST, RapidProfiles.SERVICE})
@@ -386,8 +388,10 @@ class CustomLoggerTest {
 
 //        DemoConfig.USE_LAZY_LOGGER = Boolean.TRUE;
 
+        // will be overwritten by CustomLogger
         LogChild2.LOGGER =  SmartLogger.builder()
                 .logShortOnAlreadySeen(false)
+                .logShortForm(false)
                 .build();
 
         // see JpaLogChild2Service for annotations
@@ -417,26 +421,30 @@ class CustomLoggerTest {
         logChild2Service.testAop("abc",logChild2);
 
 
-        Mockito.verify(shortChild2Logger.toString(equals()))
+        // assert delegation worked
+        String arg2Output = Mockito.verify(ProxyUtils.aopUnproxy(shortChild2Logger)).toString(refEq(logChild2));
+        String retOutput = Mockito.verify(ProxyUtils.aopUnproxy(sidePropertyOnlyChild2Logger)).toString(refEq(logChild2));
 
-        System.err.println(logResult);
-//        String s = savedLogEntity.toString();
+        Assertions.assertNotNull(arg2Output);
+        Assertions.assertNotNull(retOutput);
+
+        System.err.println(arg2Output);
+        System.err.println(retOutput);
+
+        // arg2 should  be logged short
+        assertContainsStringOnce(arg2Output, LOG_ENTITY_NAME);
+        assertContainsStringOnce(arg2Output, LAZY_COL2_ENTITY1_NAME);
+
+        Assertions.assertFalse(arg2Output.contains(COL2_SIDE_PROPERTY_KEY));
+        Assertions.assertFalse(arg2Output.contains(COL2_ENTITY1_SIDE_PROPERTY));
 
 
-        assertContainsStringOnce(logResult, LOG_ENTITY_NAME);
-        assertContainsStringOnce(logResult, LAZY_COL1_ENTITY1_NAME);
-        assertContainsStringOnce(logResult, LAZY_COL1_ENTITY2_NAME);
-        // important main fields logged twice
-        assertContainsString(logResult, LAZY_COL2_ENTITY1_NAME,2);
-        assertContainsString(logResult,COL2_ENTITY1_SECOND_MAIN_PROPERTY,2);
-        assertContainsString(logResult, COL2_SECOND_MAIN_PROPERTY_KEY,2);
-        // unimportant skipped when entity is logged > 1 times
-        assertContainsString(logResult,COL2_ENTITY1_SIDE_PROPERTY,1);
-        assertContainsString(logResult, COL2_SIDE_PROPERTY_KEY,1);
-        assertContainsString(logResult, CIRCULAR_REFERENCE_STRING, 4);
-//        // assertContainsIdOnce(logResult, savedLogEntity.getId());
-//        // assertContainsIdOnce(logResult, child11.getId());
-//        // assertContainsIdOnce(logResult, child12.getId());
+        // ret should only log side property
+        Assertions.assertFalse(retOutput.contains(LOG_ENTITY_NAME));
+        Assertions.assertFalse(retOutput.contains(LAZY_COL2_ENTITY1_NAME));
+        Assertions.assertFalse(retOutput.contains(LOG_ENTITY_NAME));
+        assertContainsStringOnce(retOutput, COL2_SIDE_PROPERTY_KEY);
+        assertContainsStringOnce(retOutput, COL2_ENTITY1_SIDE_PROPERTY);
     }
 
 
