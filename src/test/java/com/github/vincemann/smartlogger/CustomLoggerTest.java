@@ -1,5 +1,7 @@
 package com.github.vincemann.smartlogger;
 
+import com.github.vincemann.smartlogger.aop.ShortChild2Logger;
+import com.github.vincemann.smartlogger.aop.SidePropertyOnlyChild2Logger;
 import com.github.vincemann.smartlogger.config.LoggerConfig;
 import com.github.vincemann.smartlogger.model.*;
 import com.github.vincemann.smartlogger.service.*;
@@ -12,8 +14,11 @@ import com.google.common.collect.Sets;
 import org.apache.commons.lang3.StringUtils;
 import org.hibernate.LazyInitializationException;
 import org.junit.jupiter.api.*;
+import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.mock.mockito.SpyBean;
+import org.springframework.context.annotation.Configuration;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.transaction.TestTransaction;
 import org.springframework.transaction.annotation.Transactional;
@@ -359,6 +364,81 @@ class CustomLoggerTest {
 //        // assertContainsIdOnce(logResult, child11.getId());
 //        // assertContainsIdOnce(logResult, child12.getId());
     }
+
+
+
+
+    @Transactional
+    @Test
+    public void smartLoggerCalledInAopContextTest(){
+
+    }
+
+    @SpyBean
+    SidePropertyOnlyChild2Logger sidePropertyOnlyChild2Logger;
+
+    @SpyBean
+    ShortChild2Logger shortChild2Logger;
+
+    @Transactional
+    @Test
+    void customLoggersAopTest() throws BadEntityException {
+
+//        DemoConfig.USE_LAZY_LOGGER = Boolean.TRUE;
+
+        LogChild2.LOGGER =  SmartLogger.builder()
+                .logShortOnAlreadySeen(false)
+                .build();
+
+        // see JpaLogChild2Service for annotations
+        /*
+            @ConfigureCustomLoggers(loggers =
+            {
+                    @CustomLogger(key = "arg2", beanname = "shortChild2Logger"),
+                    @CustomLogger(key = "ret", beanname = "sidePropertyOnlyChild2Logger")
+            }
+    )
+         */
+
+
+
+
+        LogEntity savedLogEntity = logEntityService.save(logEntity);
+
+        // this will be logged twice
+        LogChild2 logChild2 = logChild2Service.save(lazyCol2_child1);
+        logChild2.setLogEntity(savedLogEntity);
+
+        savedLogEntity.getLazyChildren2().add(logChild2);
+
+        TestTransaction.flagForCommit();
+        TestTransaction.end();
+
+        logChild2Service.testAop("abc",logChild2);
+
+
+        Mockito.verify(shortChild2Logger.toString(equals()))
+
+        System.err.println(logResult);
+//        String s = savedLogEntity.toString();
+
+
+        assertContainsStringOnce(logResult, LOG_ENTITY_NAME);
+        assertContainsStringOnce(logResult, LAZY_COL1_ENTITY1_NAME);
+        assertContainsStringOnce(logResult, LAZY_COL1_ENTITY2_NAME);
+        // important main fields logged twice
+        assertContainsString(logResult, LAZY_COL2_ENTITY1_NAME,2);
+        assertContainsString(logResult,COL2_ENTITY1_SECOND_MAIN_PROPERTY,2);
+        assertContainsString(logResult, COL2_SECOND_MAIN_PROPERTY_KEY,2);
+        // unimportant skipped when entity is logged > 1 times
+        assertContainsString(logResult,COL2_ENTITY1_SIDE_PROPERTY,1);
+        assertContainsString(logResult, COL2_SIDE_PROPERTY_KEY,1);
+        assertContainsString(logResult, CIRCULAR_REFERENCE_STRING, 4);
+//        // assertContainsIdOnce(logResult, savedLogEntity.getId());
+//        // assertContainsIdOnce(logResult, child11.getId());
+//        // assertContainsIdOnce(logResult, child12.getId());
+    }
+
 
     @Transactional
     @Test
