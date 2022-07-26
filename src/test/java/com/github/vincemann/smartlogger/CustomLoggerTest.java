@@ -28,8 +28,9 @@ import java.util.HashMap;
 import java.util.Map;
 
 import static com.github.vincemann.smartlogger.SmartLogger.*;
-import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.ArgumentMatchers.refEq;
+import static com.github.vincemann.smartlogger.service.jpa.JpaLogChild2Service.NEW_SIDE_PROPERTY;
+import static org.mockito.ArgumentMatchers.*;
+import static org.mockito.Mockito.*;
 
 
 @ActiveProfiles(value = {RapidTestProfiles.TEST, RapidTestProfiles.SERVICE_TEST, RapidProfiles.SERVICE})
@@ -421,12 +422,21 @@ class CustomLoggerTest {
         logChild2Service.testAop("abc",logChild2);
 
 
-        // assert delegation worked
-        String arg2Output = Mockito.verify(ProxyUtils.aopUnproxy(shortChild2Logger)).toString(refEq(logChild2));
-        String retOutput = Mockito.verify(ProxyUtils.aopUnproxy(sidePropertyOnlyChild2Logger)).toString(refEq(logChild2));
+        // lets from spiedDao.find()
+        final ResultCaptor<String> shortChild2LoggerResultCaptor = new ResultCaptor<>();
+        doAnswer(shortChild2LoggerResultCaptor).when(shortChild2Logger).toString(refEq(logChild2));
+        final ResultCaptor<String> sidePropertyOnlyResultCaptor = new ResultCaptor<>();
+        when(sidePropertyOnlyResultCaptor).thenReturn(sidePropertyOnlyResultCaptor);
+        doAnswer(sidePropertyOnlyResultCaptor).when(sidePropertyOnlyChild2Logger).toString(refEq(logChild2));
+        doAnswer(sidePropertyOnlyResultCaptor).when(sidePropertyOnlyChild2Logger).toString(refEq(logChild2));
 
-        Assertions.assertNotNull(arg2Output);
-        Assertions.assertNotNull(retOutput);
+        // assert delegation worked
+        Mockito.verify(ProxyUtils.aopUnproxy(shortChild2Logger)).toString(refEq(logChild2));
+        Mockito.verify(ProxyUtils.aopUnproxy(sidePropertyOnlyChild2Logger)).toString(refEq(logChild2));
+        String arg2Output = shortChild2LoggerResultCaptor.getResult();
+        String retOutput = sidePropertyOnlyResultCaptor.getResult();
+//        Assertions.assertNotNull(arg2Output);
+//        Assertions.assertNotNull(retOutput);
 
         System.err.println(arg2Output);
         System.err.println(retOutput);
@@ -444,7 +454,7 @@ class CustomLoggerTest {
         Assertions.assertFalse(retOutput.contains(LAZY_COL2_ENTITY1_NAME));
         Assertions.assertFalse(retOutput.contains(LOG_ENTITY_NAME));
         assertContainsStringOnce(retOutput, COL2_SIDE_PROPERTY_KEY);
-        assertContainsStringOnce(retOutput, COL2_ENTITY1_SIDE_PROPERTY);
+        assertContainsStringOnce(retOutput, NEW_SIDE_PROPERTY);
     }
 
 
