@@ -462,6 +462,7 @@ class CustomLoggerTest {
 
         smartLogger =  SmartLogger.builder()
                 .logShortOnAlreadySeen(false)
+                .ignoreFieldsShortForm(Sets.newHashSet("lazyChildren2"))
                 .build();
 
 
@@ -583,6 +584,7 @@ class CustomLoggerTest {
 
         smartLogger =  SmartLogger.builder()
                 .logShortOnAlreadySeen(false)
+                .ignoreFieldsShortForm(Sets.newHashSet("lazyChildren2"))
                 .callToString(false)
                 .build();
 
@@ -704,6 +706,8 @@ class CustomLoggerTest {
         //        DemoConfig.USE_LAZY_LOGGER = Boolean.TRUE;
 
         smartLogger =  SmartLogger.builder()
+                .logShortOnAlreadySeen(false)
+                .ignoreFieldsShortForm(Sets.newHashSet("lazyChildren2"))
                 .build();
 
         LogEntity savedLogEntity = logEntityService.save(logEntity);
