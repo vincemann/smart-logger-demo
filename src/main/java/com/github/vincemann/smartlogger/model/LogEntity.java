@@ -3,6 +3,7 @@ package com.github.vincemann.smartlogger.model;
 
 import com.fasterxml.jackson.annotation.JsonManagedReference;
 
+import com.github.vincemann.smartlogger.ExtraShortToStringProperty;
 import com.github.vincemann.smartlogger.ShortToStringProperty;
 import com.github.vincemann.springrapid.autobidir.model.child.annotation.BiDirChildCollection;
 import com.github.vincemann.springrapid.autobidir.model.child.annotation.BiDirChildEntity;
@@ -58,6 +59,7 @@ public class LogEntity extends LogIdentifiableEntity {
             inverseJoinColumns = {@JoinColumn(name = "LOG_CHILD4_ID", referencedColumnName = "ID")})
 //    @NotNull
     @BiDirChildCollection(LogChild4.class)
+    @ExtraShortToStringProperty
     private Set<LogChild4> logChildren4 = new HashSet<>();
 
     @OneToMany(cascade = CascadeType.ALL, mappedBy = "logEntity",fetch = FetchType.EAGER)

@@ -59,6 +59,7 @@ class CustomLoggerTest {
     static final String LOG_CHILD4_1_NAME = "first log child 4";
     static final String LOG_CHILD4_2_NAME = "second log child 4";
     static final String LOG_CHILD4_3_NAME = "third log child 4";
+    static final String LOG_CHILD4_1_SOLO_PROPERTY = "solo property child4";
     static final String LOG_ENTITY2_NAME = "second log-entity";
 
 
@@ -159,11 +160,14 @@ class CustomLoggerTest {
 
         logChild4_1 = LogChild4.builder()
                 .name(LOG_CHILD4_1_NAME)
+                .soloExtraShort(LOG_CHILD4_1_SOLO_PROPERTY)
                 .build();
 
         logChild4_2 = LogChild4.builder()
                 .name(LOG_CHILD4_2_NAME)
+                .soloExtraShort(LOG_CHILD4_1_SOLO_PROPERTY)
                 .build();
+
         logChild4_3 = LogChild4.builder()
                 .name(LOG_CHILD4_3_NAME)
                 .build();
@@ -514,6 +518,58 @@ class CustomLoggerTest {
         Assertions.assertFalse(logResult.contains(COL3_ENTITY2_SIDE_PROPERTY));
     }
 
+    @Transactional
+    @Test
+    void logAnnotatedCollectionFieldInExtraShortForm() throws BadEntityException {
+
+//        DemoConfig.USE_LAZY_LOGGER = Boolean.TRUE;
+
+        smartLogger =  SmartLogger.builder()
+                .logShortOnAlreadySeen(false)
+                .build();
+
+
+
+
+
+        LogEntity savedLogEntity = logEntityService.save(logEntity);
+
+        // logged extra short
+        LogChild4 logChild41 = logChild4Service.save(logChild4_1);
+        logChild41.getLogEntities().add(savedLogEntity);
+
+        LogChild4 logChild42 = logChild4Service.save(logChild4_1);
+        logChild42.getLogEntities().add(savedLogEntity);
+
+        // logged short
+        LogChild2 logChild2 = logChild2Service.save(lazyCol2_child1);
+        logChild2.setLogEntity(savedLogEntity);
+
+
+        savedLogEntity.getLazyChildren2().add(logChild2);
+        savedLogEntity.getLogChildren4().add(logChild41);
+        savedLogEntity.getLogChildren4().add(logChild42);
+
+        TestTransaction.flagForCommit();
+        TestTransaction.end();
+
+        String logResult = smartLogger.toString(savedLogEntity);
+        System.err.println(logResult);
+        String s = savedLogEntity.toString();
+
+
+        assertContainsStringOnce(logResult, LOG_ENTITY_NAME);
+        assertContainsStringOnce(logResult, LAZY_COL2_ENTITY1_NAME);
+        assertContainsStringOnce(logResult,COL2_ENTITY1_SECOND_MAIN_PROPERTY);
+        assertContainsStringOnce(logResult,LOG_CHILD4_1_SOLO_PROPERTY);
+        assertContainsString(logResult, CIRCULAR_REFERENCE_STRING, 1);
+
+
+        Assertions.assertFalse(logResult.contains(COL2_SIDE_PROPERTY_KEY));
+        Assertions.assertFalse(logResult.contains(LOG_CHILD4_1_NAME));
+        Assertions.assertFalse(logResult.contains(COL2_ENTITY1_SIDE_PROPERTY));
+    }
+
 
 
     @Transactional
@@ -683,21 +739,6 @@ class CustomLoggerTest {
 
     @Transactional
     @Test
-    void useDiffLoggersForDiffArgs_inAopLog() throws BadEntityException {
-
-        LogEntity savedLogEntity = logEntityService.save(logEntity);
-
-
-        LogChild2 logChild2 = logChild2Service.save(lazyCol2_child1);
-        logChild2.setLogEntity(savedLogEntity);
-
-
-        LogChild2 retVal = logChild2Service.testAop("gil", logChild2);
-        // need to checkout Logs yourself
-    }
-
-    @Transactional
-    @Test
     void canLogTwoSameEntities_withoutBeingDetectedAsCircularRef() throws BadEntityException {
         _canLogTwoSameEntities_withoutBeingDetectedAsCircularRef();
     }
@@ -753,15 +794,9 @@ class CustomLoggerTest {
     @Transactional
     @Test
     void canLogTwoSameEntities_hasNoState() throws BadEntityException {
-
         _canLogTwoSameEntities_withoutBeingDetectedAsCircularRef();
         State state = STATE_MAP.get(Thread.currentThread().getId());
         Assertions.assertNull(state);
-//        Assertions.assertEquals(0,state.getAlreadySeen().size());
-//        Assertions.assertEquals(0,state.getCircularRefAlreadySeen().size());
-//        Assertions.assertNull(state.getRecursionDepth());
-//        Assertions.assertNull(state.getCallToString());
-//        Assertions.assertNull(state.getShortCall());
     }
 
 
@@ -772,6 +807,7 @@ class CustomLoggerTest {
         LoggerConfig.USE_SMART_LOGGER = Boolean.TRUE;
 
         smartLogger =  SmartLogger.builder()
+                .ignoreFieldsExtraShortForm(Sets.newHashSet("logChildren4"))
                 .build();
 
         LogEntity savedLogEntity = logEntityService.save(logEntity);
@@ -809,6 +845,7 @@ class CustomLoggerTest {
 
 
         smartLogger = SmartLogger.builder()
+                .ignoreFieldsExtraShortForm(Sets.newHashSet("logChildren4"))
                 .build();
 
 
