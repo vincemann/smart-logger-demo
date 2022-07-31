@@ -11,6 +11,7 @@ import com.github.vincemann.springrapid.core.slicing.RapidProfiles;
 import com.github.vincemann.springrapid.core.util.ProxyUtils;
 import com.github.vincemann.springrapid.coretest.slicing.RapidTestProfiles;
 import com.github.vincemann.springrapid.coretest.util.TransactionalRapidTestUtil;
+import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import org.apache.commons.lang3.StringUtils;
 import org.hibernate.LazyInitializationException;
@@ -24,6 +25,7 @@ import org.springframework.test.context.transaction.TestTransaction;
 import org.springframework.transaction.annotation.Transactional;
 
 import javax.persistence.PersistenceUnitUtil;
+import java.lang.annotation.Annotation;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -60,6 +62,7 @@ class CustomLoggerTest {
     static final String LOG_CHILD4_2_NAME = "second log child 4";
     static final String LOG_CHILD4_3_NAME = "third log child 4";
     static final String LOG_CHILD4_1_SOLO_PROPERTY = "solo property child4";
+    static final String LOG_CHILD4_2_SOLO_PROPERTY = "s0l0 property-child4";
     static final String LOG_ENTITY2_NAME = "second log-entity";
 
 
@@ -165,7 +168,7 @@ class CustomLoggerTest {
 
         logChild4_2 = LogChild4.builder()
                 .name(LOG_CHILD4_2_NAME)
-                .soloExtraShort(LOG_CHILD4_1_SOLO_PROPERTY)
+                .soloExtraShort(LOG_CHILD4_2_SOLO_PROPERTY)
                 .build();
 
         logChild4_3 = LogChild4.builder()
@@ -538,7 +541,7 @@ class CustomLoggerTest {
         LogChild4 logChild41 = logChild4Service.save(logChild4_1);
         logChild41.getLogEntities().add(savedLogEntity);
 
-        LogChild4 logChild42 = logChild4Service.save(logChild4_1);
+        LogChild4 logChild42 = logChild4Service.save(logChild4_2);
         logChild42.getLogEntities().add(savedLogEntity);
 
         // logged short
@@ -570,6 +573,65 @@ class CustomLoggerTest {
         Assertions.assertFalse(logResult.contains(COL2_ENTITY1_SIDE_PROPERTY));
     }
 
+
+    @Transactional
+    @Test
+    void canDefineShortAndExtraShortOptionsForFieldsObjectGraph() throws BadEntityException {
+
+//        DemoConfig.USE_LAZY_LOGGER = Boolean.TRUE;
+
+        Map<Class<?>,Class<? extends Annotation>> entityShortMappings = new HashMap<>();
+        entityShortMappings.put(LogChild4.class,ExtraShortToString.class);
+        // usually short logged, but not this time
+        entityShortMappings.put(LogChild2.class,NormalToString.class);
+
+        smartLogger =  SmartLogger.builder()
+                .logShortOnAlreadySeen(false)
+                .entityShortMappings(entityShortMappings)
+                .build();
+
+
+
+
+
+        LogEntity savedLogEntity = logEntityService.save(logEntity);
+
+        // logged extra short
+        LogChild4 logChild41 = logChild4Service.save(logChild4_1);
+        logChild41.getLogEntities().add(savedLogEntity);
+
+        LogChild4 logChild42 = logChild4Service.save(logChild4_2);
+        logChild42.getLogEntities().add(savedLogEntity);
+
+        // logged short
+        LogChild2 logChild2 = logChild2Service.save(lazyCol2_child1);
+        logChild2.setLogEntity(savedLogEntity);
+
+
+        savedLogEntity.getLazyChildren2().add(logChild2);
+        savedLogEntity.getLogChildren4().add(logChild41);
+        savedLogEntity.getLogChildren4().add(logChild42);
+
+        TestTransaction.flagForCommit();
+        TestTransaction.end();
+
+        String logResult = smartLogger.toString(savedLogEntity);
+        System.err.println(logResult);
+        String s = savedLogEntity.toString();
+
+
+        assertContainsStringOnce(logResult, LOG_ENTITY_NAME);
+        assertContainsStringOnce(logResult, LAZY_COL2_ENTITY1_NAME);
+        assertContainsStringOnce(logResult, COL2_SIDE_PROPERTY_KEY);
+        assertContainsStringOnce(logResult, COL2_ENTITY1_SIDE_PROPERTY);
+        assertContainsStringOnce(logResult,COL2_ENTITY1_SECOND_MAIN_PROPERTY);
+        assertContainsStringOnce(logResult,LOG_CHILD4_1_SOLO_PROPERTY);
+        assertContainsStringOnce(logResult,LOG_CHILD4_2_SOLO_PROPERTY);
+        assertContainsString(logResult, CIRCULAR_REFERENCE_STRING, 1);
+
+
+        Assertions.assertFalse(logResult.contains(LOG_CHILD4_1_NAME));
+    }
 
 
     @Transactional
@@ -641,7 +703,6 @@ class CustomLoggerTest {
         smartLogger =  SmartLogger.builder()
                 .logShortOnAlreadySeen(false)
                 .ignoreFieldsShortForm(Sets.newHashSet("lazyChildren2"))
-                .callToString(false)
                 .build();
 
 

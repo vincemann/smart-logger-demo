@@ -1,7 +1,7 @@
 package com.github.vincemann.smartlogger.model;
 
 import com.fasterxml.jackson.annotation.JsonBackReference;
-import com.github.vincemann.smartlogger.ShortToStringProperty;
+import com.github.vincemann.smartlogger.ShortToString;
 import com.github.vincemann.smartlogger.SmartLogger;
 import com.github.vincemann.smartlogger.CallToString;
 import com.github.vincemann.springrapid.autobidir.model.parent.annotation.BiDirParentEntity;
@@ -27,19 +27,19 @@ public class LogChild2 extends LogIdentifiableEntity {
 
     public static SmartLogger LOGGER;
 
-    @ShortToStringProperty
+    @ShortToString
     @ManyToOne
     @JoinColumn(name = "log_entity_id")
     @JsonBackReference
     @BiDirParentEntity
     private LogEntity logEntity;
 
-    @ShortToStringProperty
+    @ShortToString
     private String name;
 
     private String sideProperty;
 
-    @ShortToStringProperty
+    @ShortToString
     private String secondMainProperty;
 
 

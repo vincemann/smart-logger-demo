@@ -1,8 +1,7 @@
 
 package com.github.vincemann.smartlogger.model;
 
-import com.github.vincemann.smartlogger.ExtraShortToStringProperty;
-import com.github.vincemann.smartlogger.ShortToStringProperty;
+import com.github.vincemann.smartlogger.ExtraShortToString;
 import com.github.vincemann.springrapid.autobidir.model.parent.annotation.BiDirParentCollection;
 import com.github.vincemann.springrapid.core.model.IdentifiableEntityImpl;
 
@@ -26,7 +25,7 @@ public class LogChild4 extends IdentifiableEntityImpl<Long> {
 
     private String name;
 
-    @ExtraShortToStringProperty
+    @ExtraShortToString
     private String soloExtraShort;
 
     @ManyToMany(mappedBy = "logChildren4", fetch = FetchType.LAZY)

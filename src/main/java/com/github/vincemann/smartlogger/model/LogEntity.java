@@ -3,8 +3,8 @@ package com.github.vincemann.smartlogger.model;
 
 import com.fasterxml.jackson.annotation.JsonManagedReference;
 
-import com.github.vincemann.smartlogger.ExtraShortToStringProperty;
-import com.github.vincemann.smartlogger.ShortToStringProperty;
+import com.github.vincemann.smartlogger.ExtraShortToString;
+import com.github.vincemann.smartlogger.ShortToString;
 import com.github.vincemann.springrapid.autobidir.model.child.annotation.BiDirChildCollection;
 import com.github.vincemann.springrapid.autobidir.model.child.annotation.BiDirChildEntity;
 import com.github.vincemann.springrapid.autobidir.model.parent.annotation.BiDirParentEntity;
@@ -25,7 +25,7 @@ import static com.github.vincemann.smartlogger.config.LoggerConfig.USE_SMART_LOG
 @Table(name = "log_entity")
 public class LogEntity extends LogIdentifiableEntity {
 
-    @ShortToStringProperty
+    @ShortToString
     private String name;
 
     @Builder
@@ -46,7 +46,7 @@ public class LogEntity extends LogIdentifiableEntity {
     @JsonManagedReference
     private Set<LogChild> lazyChildren1 = new HashSet<>();
 
-    @ShortToStringProperty
+    @ShortToString
     @OneToMany(cascade = CascadeType.ALL, mappedBy = "logEntity",fetch = FetchType.LAZY)
     @BiDirChildCollection(LogChild2.class)
     @JsonManagedReference
@@ -59,13 +59,13 @@ public class LogEntity extends LogIdentifiableEntity {
             inverseJoinColumns = {@JoinColumn(name = "LOG_CHILD4_ID", referencedColumnName = "ID")})
 //    @NotNull
     @BiDirChildCollection(LogChild4.class)
-    @ExtraShortToStringProperty
+    @ExtraShortToString
     private Set<LogChild4> logChildren4 = new HashSet<>();
 
     @OneToMany(cascade = CascadeType.ALL, mappedBy = "logEntity",fetch = FetchType.EAGER)
     @BiDirChildCollection(LogChild3.class)
     @JsonManagedReference
-    @ShortToStringProperty
+    @ShortToString
     private Set<LogChild3> logChildren3 = new HashSet<>();
 
     @OneToOne(cascade = CascadeType.ALL, fetch = FetchType.EAGER)
